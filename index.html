@@ -224,7 +224,33 @@ a{color:inherit;text-decoration:none;}
 
 .loading{text-align:center;padding:40px;color:var(--t2);font-size:0.9rem;background:var(--bg);}
 .empty{text-align:center;padding:60px 20px;color:var(--t2);font-size:0.85rem;background:var(--bg);}
-mark{background:rgba(242,196,76,0.3);color:#7A5C00;border-radius:2px;padding:0 1px;}
+mark{background:rgba(255,210,0,0.22);color:var(--text);border-radius:2px;padding:0 2px;outline:1px solid rgba(255,210,0,0.35);}
+
+/* ── Masonry / Notion layout ── */
+.notes-masonry{column-count:3;column-gap:10px;padding:12px;background:var(--bg);}
+@media(max-width:900px){.notes-masonry{column-count:2;}}
+@media(max-width:560px){.notes-masonry{column-count:1;}}
+.notion-card{break-inside:avoid;background:#fff;border-radius:8px;padding:16px 18px;margin-bottom:10px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.06);color:#37352f;
+  font-family:ui-sans-serif,-apple-system,'PingFang SC',sans-serif;cursor:pointer;transition:box-shadow 0.15s;}
+.notion-card:hover{box-shadow:0 3px 10px rgba(0,0,0,0.1),0 0 0 1px rgba(0,0,0,0.08);}
+.notion-card .nt{font-size:0.72rem;color:#6b7280;margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.notion-card .nb{font-weight:600;color:#374151;font-size:0.8rem;}
+.notion-card .na{color:#9ca3af;font-size:0.72rem;}
+.notion-card .nx{font-size:16px;line-height:1.75;color:#1a1a1a;margin-bottom:0;white-space:pre-wrap;word-break:break-word;}
+.notion-card .nth{font-size:15px;line-height:1.7;color:#4b5563;margin-top:10px;padding:10px 12px;background:#f9fafb;border-radius:6px;white-space:pre-wrap;word-break:break-word;}
+.notion-card .ndm{font-size:0.68rem;color:#d1d5db;margin-top:8px;}
+.notion-card .nbdg{font-size:0.65rem;padding:1px 6px;border-radius:4px;font-weight:500;}
+.notion-card .nbdg.h{background:#eff6ff;color:#3b82f6;}
+.notion-card .nbdg.t{background:#fff7ed;color:#f97316;}
+.notion-card .nbdg.k{background:#f0fdf4;color:#16a34a;}
+.notion-card .nbdg.l{background:#fefce8;color:#ca8a04;}
+.notion-card .nbdg.r{background:#fff1f2;color:#e11d48;}
+mark.notion-mark{background:rgba(255,212,0,0.3);color:inherit;outline:none;}
+.layout-btn{padding:5px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;
+  color:var(--t2);font-size:0.75rem;cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap;}
+.layout-btn:hover{color:var(--text);border-color:var(--border2);}
+.layout-btn.active{background:var(--s3);color:var(--text);border-color:var(--border2);}
 
 /* ── Knowledge Graph ── */
 .gnode circle{stroke-width:1.5px;cursor:pointer;transition:opacity 0.2s;}
@@ -234,8 +260,42 @@ mark{background:rgba(242,196,76,0.3);color:#7A5C00;border-radius:2px;padding:0 1
 .gnode.faded text{opacity:0.08;}
 .gnode.highlighted circle{stroke-width:3px;}
 </style>
+<style>
+#wr-gate{position:fixed;inset:0;z-index:9999;background:#0f0f13;display:flex;align-items:center;justify-content:center;}
+#wr-gate .card{background:#1a1a22;border:1px solid #2e2e40;border-radius:16px;padding:44px 40px;width:360px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.6);}
+#wr-gate h1{font-size:1.4rem;font-weight:700;margin-bottom:6px;background:linear-gradient(135deg,#c4b9ff,#7c6af7,#3fc8f2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#wr-gate p{font-size:.85rem;color:#8888aa;margin-bottom:28px;}
+#wr-gate input{width:100%;padding:12px 16px;background:#22222e;border:1px solid #2e2e40;border-radius:9px;color:#e8e8f0;font-size:1rem;outline:none;transition:border-color .2s;text-align:center;letter-spacing:.1em;}
+#wr-gate input:focus{border-color:#7c6af7;}
+#wr-gate .err{color:#f2564f;font-size:.8rem;margin-top:10px;min-height:20px;}
+#wr-gate button{width:100%;margin-top:18px;padding:13px;background:linear-gradient(135deg,#7c6af7,#5a4de0);border:none;border-radius:9px;color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;transition:opacity .2s;}
+#wr-gate button:hover{opacity:.88;}
+</style>
 </head>
 <body>
+<div id="wr-gate">
+  <div class="card">
+    <h1>📝 微信读书笔记</h1>
+    <p>请输入访问密码</p>
+    <input type="password" id="wr-pwd" placeholder="密码" autofocus autocomplete="current-password">
+    <div class="err" id="wr-err"></div>
+    <button onclick="wrLogin()">进入</button>
+  </div>
+</div>
+<script>
+(function(){
+  const KEY='wr_authed_2025', HASH='df0c03783f8434c372d084c40b9acde9e4bc59fbcdf41ea9ea2a82452ce97c47';
+  async function sha256(s){const b=new TextEncoder().encode(s);const h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');}
+  window.wrLogin=async function(){
+    const v=document.getElementById('wr-pwd').value;
+    const h=await sha256(v);
+    if(h===HASH){localStorage.setItem(KEY,'1');document.getElementById('wr-gate').remove();}
+    else{document.getElementById('wr-err').textContent='密码错误，请重试';}
+  };
+  document.getElementById('wr-pwd').addEventListener('keydown',e=>{if(e.key==='Enter')wrLogin();});
+  if(localStorage.getItem(KEY)==='1') document.getElementById('wr-gate').remove();
+})();
+</script>
 
 <div class="header">
   <div class="header-top">
@@ -305,6 +365,10 @@ mark{background:rgba(242,196,76,0.3);color:#7A5C00;border-radius:2px;padding:0 1
         <button class="sort-btn" data-sort="lk" onclick="setSort('lk',this)">点赞↓</button>
       </div>
       <button class="random-btn" onclick="showRandom()">🎲 随机10条</button>
+      <div style="display:flex;gap:3px;">
+        <button class="layout-btn active" id="layoutList" onclick="setLayout('list',this)" title="列表">☰</button>
+        <button class="layout-btn" id="layoutMasonry" onclick="setLayout('masonry',this)" title="瀑布流">⊞</button>
+      </div>
       <span class="result-count" id="resultCount"></span>
     </div>
     <div class="graph-filter-bar" id="graphFilterBar">
@@ -396,6 +460,8 @@ mark{background:rgba(242,196,76,0.3);color:#7A5C00;border-radius:2px;padding:0 1
       </div>
       <div style="font-size:0.75rem;color:var(--t2);margin-bottom:8px;">关联最强的知识点：</div>
       <div id="ndRelated" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+      <div style="font-size:0.75rem;color:var(--t2);margin-bottom:8px;">涉及的书：</div>
+      <div id="ndBooks" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;"></div>
       <button onclick="searchFromGraph()" style="font-size:0.78rem;padding:5px 14px;background:rgba(124,106,247,0.15);
         border:1px solid rgba(124,106,247,0.4);border-radius:6px;color:var(--acc);cursor:pointer;font-family:inherit;">
         在笔记中搜索 →
@@ -472,6 +538,7 @@ window.WR_GRAPH={"nodes":[{"id":"产品","label":"产品","count":186,"books":46
 const PAGE_SIZE = 40;
 let filteredNotes = [], currentPage = 1;
 let searchQuery='', filterType='all', filterYear='', filterTheme='';
+let layoutMode='list';
 let filterBook='', filterAuthor='', filterCat='';
 let sortOrder='new';
 let searchTimer=null;
@@ -621,12 +688,50 @@ function noteHTML(n, q=''){
   </div>`;
 }
 
+function setLayout(mode, btn){
+  layoutMode=mode;
+  document.getElementById('layoutList').classList.toggle('active', mode==='list');
+  document.getElementById('layoutMasonry').classList.toggle('active', mode==='masonry');
+  renderPage();
+}
+function notionCard(n, q=''){
+  const isT=n.tp==='t';
+  const bdgCls=n.br?'t':isT?'t':'h';
+  const bdgTxt=n.br?'书评':isT?'想法':'划线';
+  const catTxt={k:'知识',l:'文学',r:'感悟',u:''}[n.cat||'u']||'';
+  const tx=n.tx?`<div class="nx">${hlNotion(n.tx,q)}</div>`:'';
+  const th=n.th?`<div class="nth">${hlNotion(n.th,q)}</div>`:'';
+  const badges=[
+    `<span class="nbdg ${bdgCls}">${bdgTxt}</span>`,
+    catTxt?`<span class="nbdg ${n.cat}">${catTxt}</span>`:'',
+  ].filter(Boolean).join('');
+  return `<div class="notion-card">
+    <div class="nt">
+      <span class="nb">${hlNotion(n.bk,q)}</span>
+      <span class="na">${hlNotion(n.au||'',q)}</span>
+      ${badges}
+    </div>
+    ${tx}${th}
+    <div class="ndm">${n.dt}${n.ch?' · '+esc(n.ch):''}</div>
+  </div>`;
+}
+function hlNotion(text,q){
+  if(!q||!text)return esc(text||'');
+  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  return esc(text).replace(re,m=>`<mark class="notion-mark">${m}</mark>`);
+}
 function renderPage(){
   const list=document.getElementById('notesList');
   const start=(currentPage-1)*PAGE_SIZE;
   const page=filteredNotes.slice(start,start+PAGE_SIZE);
   if(!page.length){list.innerHTML='<div class="empty">🔍 没有找到匹配的笔记</div>';return;}
-  list.innerHTML=page.map(n=>noteHTML(n,searchQuery)).join('');
+  if(layoutMode==='masonry'){
+    list.className='notes-masonry';
+    list.innerHTML=page.map(n=>notionCard(n,searchQuery)).join('');
+  } else {
+    list.className='notes-list';
+    list.innerHTML=page.map(n=>noteHTML(n,searchQuery)).join('');
+  }
 }
 function renderPagination(){
   const total=Math.ceil(filteredNotes.length/PAGE_SIZE);
@@ -841,26 +946,75 @@ function buildKnowledgeGraph(filterTheme) {
   const r = d => Math.max(7, Math.min(26, Math.sqrt(d.count / maxCount) * 34));
   const clusterR = d => Math.max(38, Math.min(80, Math.sqrt(d.totalCount) * 4));
 
-  // ── Cluster layer (visible when zoomed out < 0.52) ──
-  const clusterLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
+  // ── 5-Layer zoom system ──────────────────────────────────────────────────
+  // L1 k < 0.22  : domain labels only (no shapes)
+  // L2 0.22–0.45 : theme cluster bubbles
+  // L3 0.45–0.68 : major nodes (top 35 by count) + inter-major edges
+  // L4 0.68–1.20 : all nodes + all edges (normal)
+  // L5 k ≥ 1.20  : all nodes + enriched edges (more opaque)
 
+  // ── L1: label layer ──
+  const labelLayer = g.append('g').style('opacity', 1).style('pointer-events', 'none');
+  labelLayer.selectAll('text').data(clusterData).join('text')
+    .attr('x', d => d.x).attr('y', d => d.y).attr('text-anchor','middle').attr('dominant-baseline','middle')
+    .attr('fill', d => THEME_COLORS[d.theme]||'#aaa').attr('font-size', 22).attr('font-weight', 700)
+    .style('letter-spacing', '0.06em')
+    .text(d => labels[d.theme]||d.theme);
+
+  // ── L2: cluster bubble layer ──
+  const clusterLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
   clusterLayer.selectAll('circle').data(clusterData).join('circle')
     .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', clusterR)
-    .attr('fill', d => THEME_COLORS[d.theme]||'#555').attr('fill-opacity', 0.15)
-    .attr('stroke', d => THEME_COLORS[d.theme]||'#555').attr('stroke-width', 2).attr('stroke-opacity', 0.6);
-
+    .attr('fill', d => THEME_COLORS[d.theme]||'#555').attr('fill-opacity', 0.13)
+    .attr('stroke', d => THEME_COLORS[d.theme]||'#555').attr('stroke-width', 2).attr('stroke-opacity', 0.55);
   clusterLayer.selectAll('text.cname').data(clusterData).join('text').attr('class','cname')
-    .attr('x', d => d.x).attr('y', d => d.y - 4).attr('text-anchor','middle')
+    .attr('x', d => d.x).attr('y', d => d.y - 6).attr('text-anchor','middle')
     .attr('fill', d => THEME_COLORS[d.theme]||'#aaa').attr('font-size', 15).attr('font-weight', 600)
-    .style('text-shadow', '0 1px 4px #0f0f13').text(d => labels[d.theme]||d.theme);
-
+    .text(d => labels[d.theme]||d.theme);
   clusterLayer.selectAll('text.ccnt').data(clusterData).join('text').attr('class','ccnt')
-    .attr('x', d => d.x).attr('y', d => d.y + 17).attr('text-anchor','middle')
+    .attr('x', d => d.x).attr('y', d => d.y + 14).attr('text-anchor','middle')
     .attr('fill', '#8888aa').attr('font-size', 11)
     .text(d => `${d.count} 个知识点`);
 
-  // ── Detail layer (individual nodes + edges) ──
-  const detailLayer = g.append('g');
+  // ── L3: major nodes layer (top 35 by count) ──
+  const majorNodes = [...nodes].sort((a,b) => b.count - a.count).slice(0, 35);
+  const majorSet = new Set(majorNodes.map(n => n.id));
+  const majorLinks = links.filter(l => {
+    const s = typeof l.source === 'object' ? l.source.id : l.source;
+    const t = typeof l.target === 'object' ? l.target.id : l.target;
+    return majorSet.has(s) && majorSet.has(t);
+  });
+
+  const majorLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
+  const majorLinkEl = majorLayer.append('g').selectAll('line').data(majorLinks).join('line')
+    .attr('stroke', d => {
+      const sId = typeof d.source === 'object' ? d.source.id : d.source;
+      const node = nodes.find(n => n.id === sId);
+      return node ? THEME_COLORS[node.theme]||'#555' : '#555';
+    })
+    .attr('stroke-width', d => Math.max(1, Math.min(4, d.weight / maxWeight * 4)))
+    .attr('stroke-opacity', 0.28);
+  const majorNodeEl = majorLayer.append('g').selectAll('g.gnode').data(majorNodes).join('g').attr('class','gnode')
+    .on('click', (e, d) => {
+      e.stopPropagation();
+      // Zoom into detail level, then select
+      svg.transition().duration(350).call(
+        zoomBehavior.transform,
+        d3.zoomIdentity.translate(W/2 - (d.x||0)*0.9, H/2 - (d.y||0)*0.9).scale(0.9)
+      );
+      setTimeout(() => selectNode(d, nodeEl, linkEl, nodes, links), 380);
+    })
+    .on('mouseover', (e, d) => showGraphTooltip(e, d, nodes, links))
+    .on('mousemove', moveGraphTooltip)
+    .on('mouseout',  hideGraphTooltip);
+  majorNodeEl.append('circle').attr('r', r)
+    .attr('fill', d => THEME_COLORS[d.theme]||'#666').attr('fill-opacity', 0.8)
+    .attr('stroke', d => THEME_COLORS[d.theme]||'#666').attr('stroke-opacity', 0.85);
+  majorNodeEl.append('text').text(d => d.label).attr('text-anchor','middle')
+    .attr('dy', d => r(d) + 12).attr('font-size', d => Math.max(10, Math.min(13, r(d)*0.7)));
+
+  // ── L4 + L5: full detail layer ──
+  const detailLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
 
   const linkEl = detailLayer.append('g').selectAll('line')
     .data(links).join('line').attr('class', 'glink')
@@ -870,7 +1024,7 @@ function buildKnowledgeGraph(filterTheme) {
       return node ? THEME_COLORS[node.theme]||'#555' : '#555';
     })
     .attr('stroke-width', d => Math.max(0.8, Math.min(5, d.weight / maxWeight * 5)))
-    .attr('stroke-opacity', 0.3);
+    .attr('stroke-opacity', 0.28);
 
   const nodeEl = detailLayer.append('g').selectAll('g.gnode')
     .data(nodes).join('g').attr('class', 'gnode')
@@ -900,44 +1054,62 @@ function buildKnowledgeGraph(filterTheme) {
     .force('charge',  d3.forceManyBody().strength(d => -110 - r(d)*2.5))
     .force('center',  d3.forceCenter(W/2, H/2).strength(0.04))
     .force('collide', d3.forceCollide().radius(d => r(d)+9))
-    // Semantic forces: pull nodes toward their theme anchor
     .force('themeX',  d3.forceX(d => tp(d.theme)[0]).strength(0.07))
     .force('themeY',  d3.forceY(d => tp(d.theme)[1]).strength(0.07))
     .on('tick', () => {
       linkEl.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
             .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+      majorLinkEl.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                 .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
       nodeEl.attr('transform', d => `translate(${d.x},${d.y})`);
+      majorNodeEl.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
   _graphSim = sim;
 
-  // ── Zoom with cluster ↔ detail switching at threshold ──
-  const CLUSTER_THRESHOLD = 0.52;
-  let _inCluster = false;
+  // ── 5-layer zoom transitions ──
+  // Boundaries: L1<0.22, L2=0.22–0.45, L3=0.45–0.68, L4=0.68–1.20, L5≥1.20
+  let _zoomLevel = 0;  // 0 = uninitialized, forces first applyZoomLevel to run
+  const DUR = 200;
+
+  function applyZoomLevel(lv) {
+    if (lv === _zoomLevel) return;
+    _zoomLevel = lv;
+    // Reset all
+    [labelLayer, clusterLayer, majorLayer, detailLayer].forEach(lay =>
+      lay.transition().duration(DUR).style('opacity', 0).style('pointer-events', 'none')
+    );
+    if (lv === 1) {
+      labelLayer.transition().duration(DUR).style('opacity', 1).style('pointer-events','none');
+    } else if (lv === 2) {
+      clusterLayer.transition().duration(DUR).style('opacity', 1).style('pointer-events','all');
+    } else if (lv === 3) {
+      majorLayer.transition().duration(DUR).style('opacity', 1).style('pointer-events','all');
+    } else {
+      // L4 and L5: same detailLayer, just adjust edge opacity
+      detailLayer.transition().duration(DUR).style('opacity', 1).style('pointer-events','all');
+      linkEl.transition().duration(DUR).attr('stroke-opacity', lv === 5 ? 0.48 : 0.28);
+    }
+  }
 
   const zoomBehavior = d3.zoom()
-    .scaleExtent([0.12, 3])
+    .scaleExtent([0.10, 4])
     .on('zoom', e => {
       g.attr('transform', e.transform);
       const k = e.transform.k;
-      if (k < CLUSTER_THRESHOLD && !_inCluster) {
-        _inCluster = true;
-        detailLayer.transition().duration(220).style('opacity', 0).style('pointer-events','none');
-        clusterLayer.transition().duration(220).style('opacity', 1).style('pointer-events','all');
-      } else if (k >= CLUSTER_THRESHOLD && _inCluster) {
-        _inCluster = false;
-        clusterLayer.transition().duration(220).style('opacity', 0).style('pointer-events','none');
-        detailLayer.transition().duration(220).style('opacity', 1).style('pointer-events','all');
-      }
+      const lv = k < 0.22 ? 1 : k < 0.45 ? 2 : k < 0.68 ? 3 : k < 1.20 ? 4 : 5;
+      applyZoomLevel(lv);
     });
 
+  // Initial zoom is k=1 → L4 (full detail)
+  applyZoomLevel(4);
   svg.call(zoomBehavior);
 
-  // Add hint text at initial zoom
+  // Fade-in hint
   const hint = svg.append('text')
     .attr('x', W/2).attr('y', H - 10).attr('text-anchor', 'middle')
     .attr('font-size', 11).attr('fill', '#555570')
-    .text('缩小查看主题聚合 · 放大查看知识点详情');
+    .text('缩小查看主题 · 放大查看知识点 · 5 层缩放');
   setTimeout(() => hint.transition().duration(1500).style('opacity',0).remove(), 4000);
 
   // Click outside deselects
@@ -1003,6 +1175,21 @@ function selectNode(d, nodeEl, linkEl, nodes, links) {
     return `<span onclick="searchWord('${node.id}')" style="cursor:pointer;padding:3px 8px;border-radius:99px;font-size:0.75rem;
       background:${c}18;color:${c};border:1px solid ${c}44;" title="共现${weight}次">${node.label} <span style="opacity:0.6">${weight}</span></span>`;
   }).join('');
+
+  // Books containing this concept
+  const ndBooksEl = document.getElementById('ndBooks');
+  if (ndBooksEl && typeof WR_NOTES !== 'undefined') {
+    const bks = [...new Set(
+      WR_NOTES.filter(n => (n.tx||'').includes(d.id))
+              .map(n => n.bk).filter(Boolean)
+    )].slice(0, 24);
+    ndBooksEl.innerHTML = bks.length
+      ? bks.map(bk => {
+          const safe = bk.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          return `<span onclick="searchWord('${safe}')" style="cursor:pointer;padding:3px 9px;border-radius:5px;font-size:0.72rem;background:rgba(255,255,255,0.05);color:var(--t2);border:1px solid var(--border2);white-space:nowrap;">《${bk}》</span>`;
+        }).join('')
+      : '<span style="color:var(--t3);font-size:0.73rem;">—</span>';
+  }
 
   document.getElementById('nodeDetail').style.display = 'block';
 }
@@ -1177,28 +1364,6 @@ function jumpTheme(theme){
   document.getElementById('tab-list').classList.add('active');
   document.querySelector('.tab-btn').classList.add('active');
 }
-</script>
-
-<div id="authGate" style="position:fixed;inset:0;z-index:9999;
-  background:#0f0f13;display:flex;align-items:center;justify-content:center;">
-  <div style="position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:700px;height:400px;pointer-events:none;
-    background:radial-gradient(ellipse,rgba(124,106,247,.12) 0%,transparent 70%);"></div>
-  <div style="background:#1a1a22;border:1px solid #2e2e40;border-radius:16px;padding:44px 40px;width:360px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);">
-    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:6px;background:linear-gradient(135deg,#c4b9ff,#7c6af7,#3fc8f2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">📝 微信读书笔记</h1>
-    <p style="font-size:.85rem;color:#8888aa;margin-bottom:28px;">请输入访问密码</p>
-    <input id="authPwd" type="password" placeholder="密码" style="width:100%;padding:12px 16px;background:#22222e;border:1px solid #2e2e40;border-radius:9px;color:#e8e8f0;font-size:1rem;font-family:inherit;outline:none;text-align:center;letter-spacing:.1em;box-sizing:border-box;" onkeydown="if(event.key==='Enter')checkAuth()">
-    <div id="authErr" style="color:#f2564f;font-size:.8rem;margin-top:10px;min-height:20px;"></div>
-    <button onclick="checkAuth()" style="width:100%;margin-top:18px;padding:13px;background:linear-gradient(135deg,#7c6af7,#5a4de0);border:none;border-radius:9px;color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit;">进入</button>
-  </div>
-</div>
-<script>
-(function(){
-  const HASH='df0c03783f8434c372d084c40b9acde9e4bc59fbcdf41ea9ea2a82452ce97c47',KEY='wr_auth';
-  async function sha256(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
-  async function checkAuth(){const h=await sha256(document.getElementById('authPwd').value);if(h===HASH){localStorage.setItem(KEY,h);document.getElementById('authGate').style.display='none';}else document.getElementById('authErr').textContent='密码错误，请重试';}
-  window.checkAuth=checkAuth;
-  document.getElementById('authGate').style.display=localStorage.getItem(KEY)===HASH?'none':'flex';
-})();
 </script>
 </body>
 </html>
