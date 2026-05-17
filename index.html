@@ -57,6 +57,13 @@ a{color:inherit;text-decoration:none;}
 .result-count{font-size:0.75rem;color:var(--t2);white-space:nowrap;}
 .random-btn{padding:5px 12px;background:rgba(63,200,242,0.12);border:1px solid rgba(63,200,242,0.3);border-radius:6px;color:var(--acc3);font-size:0.75rem;cursor:pointer;font-family:inherit;transition:all 0.2s;white-space:nowrap;}
 .random-btn:hover{background:rgba(63,200,242,0.22);}
+.graph-filter-bar{display:none;padding:8px 14px;background:rgba(124,106,247,0.08);border-bottom:1px solid rgba(124,106,247,0.2);align-items:center;gap:10px;font-size:0.82rem;}
+.graph-filter-bar.visible{display:flex;}
+.graph-filter-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;background:rgba(124,106,247,0.2);border:1px solid rgba(124,106,247,0.4);border-radius:99px;color:#c4b9ff;font-weight:600;}
+.graph-filter-tag button{background:transparent;border:none;color:#c4b9ff;cursor:pointer;font-size:0.9rem;line-height:1;padding:0 0 0 2px;opacity:0.7;}
+.graph-filter-tag button:hover{opacity:1;}
+.back-to-graph{font-size:0.78rem;color:var(--acc);cursor:pointer;background:transparent;border:none;font-family:inherit;padding:0;text-decoration:underline;text-underline-offset:2px;opacity:0.8;}
+.back-to-graph:hover{opacity:1;}
 
 .notes-list{flex:1;overflow-y:auto;padding:0;background:var(--bg);}
 .pagination{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-top:1px solid var(--border);background:var(--s1);}
@@ -232,7 +239,6 @@ mark{background:rgba(242,196,76,0.3);color:#7A5C00;border-radius:2px;padding:0 1
 
 <div class="header">
   <div class="header-top">
-    
     <h1>📝 我的微信读书笔记</h1>
     <div class="hdr-stats">
       <span>📚 <strong id="totalBooks">—</strong> 本</span>
@@ -300,6 +306,14 @@ mark{background:rgba(242,196,76,0.3);color:#7A5C00;border-radius:2px;padding:0 1
       </div>
       <button class="random-btn" onclick="showRandom()">🎲 随机10条</button>
       <span class="result-count" id="resultCount"></span>
+    </div>
+    <div class="graph-filter-bar" id="graphFilterBar">
+      <span style="color:var(--t2)">来自图谱：</span>
+      <span class="graph-filter-tag" id="graphFilterTag">
+        <span id="graphFilterWord"></span>
+        <button onclick="clearGraphFilter()" title="清除">✕</button>
+      </span>
+      <button class="back-to-graph" onclick="backToGraph()">← 返回图谱</button>
     </div>
     <div class="notes-list" id="notesList"><div class="loading">加载中…</div></div>
     <div class="pagination" id="pagination"></div>
@@ -803,37 +817,67 @@ function buildKnowledgeGraph(filterTheme) {
   const rect = document.getElementById('knowledgeGraph').getBoundingClientRect();
   const W = rect.width || 900, H = 520;
 
-  // Zoom container
-  const g = svg.append('g');
-  svg.call(d3.zoom()
-    .scaleExtent([0.3, 3])
-    .on('zoom', e => g.attr('transform', e.transform))
-  );
+  // ── Theme center positions (semantic layout anchors) ──
+  const THEME_POS = {
+    yijing:    [0.18, 0.20], philosophy:[0.50, 0.15], history:   [0.82, 0.20],
+    health:    [0.12, 0.55], science:   [0.50, 0.50], business:  [0.88, 0.55],
+    psychology:[0.20, 0.85], literature:[0.50, 0.88], life:      [0.80, 0.85],
+  };
+  const tp = t => [(THEME_POS[t]||[0.5,0.5])[0]*W, (THEME_POS[t]||[0.5,0.5])[1]*H];
 
+  // ── Build cluster-view data ──
+  const themeGroups = {};
+  nodes.forEach(n => { (themeGroups[n.theme] = themeGroups[n.theme]||[]).push(n); });
+  const clusterData = Object.entries(themeGroups).map(([t, ns]) => ({
+    theme: t, count: ns.length,
+    totalCount: ns.reduce((s, n) => s + n.count, 0),
+    x: tp(t)[0], y: tp(t)[1],
+  }));
+  const labels = (typeof WR_GRAPH !== 'undefined' ? WR_GRAPH.theme_labels : {}) || {};
+
+  const g = svg.append('g');
   const maxCount = d3.max(nodes, d => d.count) || 1;
   const maxWeight = d3.max(links, d => d.weight) || 1;
   const r = d => Math.max(7, Math.min(26, Math.sqrt(d.count / maxCount) * 34));
+  const clusterR = d => Math.max(38, Math.min(80, Math.sqrt(d.totalCount) * 4));
 
-  // Draw links
-  const linkEl = g.append('g').selectAll('line')
-    .data(links).join('line')
-    .attr('class', 'glink')
+  // ── Cluster layer (visible when zoomed out < 0.52) ──
+  const clusterLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
+
+  clusterLayer.selectAll('circle').data(clusterData).join('circle')
+    .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', clusterR)
+    .attr('fill', d => THEME_COLORS[d.theme]||'#555').attr('fill-opacity', 0.15)
+    .attr('stroke', d => THEME_COLORS[d.theme]||'#555').attr('stroke-width', 2).attr('stroke-opacity', 0.6);
+
+  clusterLayer.selectAll('text.cname').data(clusterData).join('text').attr('class','cname')
+    .attr('x', d => d.x).attr('y', d => d.y - 4).attr('text-anchor','middle')
+    .attr('fill', d => THEME_COLORS[d.theme]||'#aaa').attr('font-size', 15).attr('font-weight', 600)
+    .style('text-shadow', '0 1px 4px #0f0f13').text(d => labels[d.theme]||d.theme);
+
+  clusterLayer.selectAll('text.ccnt').data(clusterData).join('text').attr('class','ccnt')
+    .attr('x', d => d.x).attr('y', d => d.y + 17).attr('text-anchor','middle')
+    .attr('fill', '#8888aa').attr('font-size', 11)
+    .text(d => `${d.count} 个知识点`);
+
+  // ── Detail layer (individual nodes + edges) ──
+  const detailLayer = g.append('g');
+
+  const linkEl = detailLayer.append('g').selectAll('line')
+    .data(links).join('line').attr('class', 'glink')
     .attr('stroke', d => {
       const sId = typeof d.source === 'object' ? d.source.id : d.source;
       const node = nodes.find(n => n.id === sId);
-      return node ? THEME_COLORS[node.theme] || '#555' : '#555';
+      return node ? THEME_COLORS[node.theme]||'#555' : '#555';
     })
     .attr('stroke-width', d => Math.max(0.8, Math.min(5, d.weight / maxWeight * 5)))
     .attr('stroke-opacity', 0.3);
 
-  // Draw nodes
-  const nodeEl = g.append('g').selectAll('g.gnode')
-    .data(nodes).join('g')
-    .attr('class', 'gnode')
+  const nodeEl = detailLayer.append('g').selectAll('g.gnode')
+    .data(nodes).join('g').attr('class', 'gnode')
     .call(d3.drag()
       .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-      .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
-      .on('end', (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+      .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; })
+      .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
     )
     .on('click', (e, d) => { e.stopPropagation(); selectNode(d, nodeEl, linkEl, nodes, links); })
     .on('mouseover', (e, d) => showGraphTooltip(e, d, nodes, links))
@@ -842,31 +886,59 @@ function buildKnowledgeGraph(filterTheme) {
 
   nodeEl.append('circle')
     .attr('r', r)
-    .attr('fill', d => THEME_COLORS[d.theme] || '#666')
-    .attr('fill-opacity', 0.85)
-    .attr('stroke', d => THEME_COLORS[d.theme] || '#666')
-    .attr('stroke-opacity', 0.9);
+    .attr('fill', d => THEME_COLORS[d.theme]||'#666').attr('fill-opacity', 0.85)
+    .attr('stroke', d => THEME_COLORS[d.theme]||'#666').attr('stroke-opacity', 0.9);
 
   nodeEl.append('text')
-    .text(d => d.label)
-    .attr('text-anchor', 'middle')
+    .text(d => d.label).attr('text-anchor', 'middle')
     .attr('dy', d => r(d) + 12)
     .attr('font-size', d => Math.max(10, Math.min(13, r(d) * 0.7)));
 
-  // Force simulation
+  // ── Force simulation with semantic attraction to theme centers ──
   const sim = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(links).id(d => d.id).distance(d => 70 + 60 / (d.weight + 1)))
-    .force('charge', d3.forceManyBody().strength(d => -120 - r(d) * 3))
-    .force('center', d3.forceCenter(W / 2, H / 2))
-    .force('collide', d3.forceCollide().radius(d => r(d) + 8))
+    .force('link',    d3.forceLink(links).id(d => d.id).distance(d => 65 + 55/(d.weight+1)))
+    .force('charge',  d3.forceManyBody().strength(d => -110 - r(d)*2.5))
+    .force('center',  d3.forceCenter(W/2, H/2).strength(0.04))
+    .force('collide', d3.forceCollide().radius(d => r(d)+9))
+    // Semantic forces: pull nodes toward their theme anchor
+    .force('themeX',  d3.forceX(d => tp(d.theme)[0]).strength(0.07))
+    .force('themeY',  d3.forceY(d => tp(d.theme)[1]).strength(0.07))
     .on('tick', () => {
-      linkEl
-        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+      linkEl.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
       nodeEl.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
   _graphSim = sim;
+
+  // ── Zoom with cluster ↔ detail switching at threshold ──
+  const CLUSTER_THRESHOLD = 0.52;
+  let _inCluster = false;
+
+  const zoomBehavior = d3.zoom()
+    .scaleExtent([0.12, 3])
+    .on('zoom', e => {
+      g.attr('transform', e.transform);
+      const k = e.transform.k;
+      if (k < CLUSTER_THRESHOLD && !_inCluster) {
+        _inCluster = true;
+        detailLayer.transition().duration(220).style('opacity', 0).style('pointer-events','none');
+        clusterLayer.transition().duration(220).style('opacity', 1).style('pointer-events','all');
+      } else if (k >= CLUSTER_THRESHOLD && _inCluster) {
+        _inCluster = false;
+        clusterLayer.transition().duration(220).style('opacity', 0).style('pointer-events','none');
+        detailLayer.transition().duration(220).style('opacity', 1).style('pointer-events','all');
+      }
+    });
+
+  svg.call(zoomBehavior);
+
+  // Add hint text at initial zoom
+  const hint = svg.append('text')
+    .attr('x', W/2).attr('y', H - 10).attr('text-anchor', 'middle')
+    .attr('font-size', 11).attr('fill', '#555570')
+    .text('缩小查看主题聚合 · 放大查看知识点详情');
+  setTimeout(() => hint.transition().duration(1500).style('opacity',0).remove(), 4000);
 
   // Click outside deselects
   svg.on('click', () => {
@@ -976,10 +1048,27 @@ function searchWord(word){
   document.getElementById('searchInput').value = word;
   searchQuery = word.toLowerCase();
   go(1);
+  // Show filter bar
+  document.getElementById('graphFilterWord').textContent = word;
+  document.getElementById('graphFilterBar').classList.add('visible');
+  // Switch to list tab
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-list').classList.add('active');
   document.querySelector('.tab-btn').classList.add('active');
+}
+function clearGraphFilter(){
+  document.getElementById('searchInput').value = '';
+  searchQuery = '';
+  go(1);
+  document.getElementById('graphFilterBar').classList.remove('visible');
+}
+function backToGraph(){
+  clearGraphFilter();
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-insights').classList.add('active');
+  document.querySelectorAll('.tab-btn')[1].classList.add('active');
 }
 
 // Similar notes — find notes sharing multiple theme tags
@@ -1092,55 +1181,24 @@ function jumpTheme(theme){
 
 <div id="authGate" style="position:fixed;inset:0;z-index:9999;
   background:#0f0f13;display:flex;align-items:center;justify-content:center;">
-  <div style="position:fixed;top:-200px;left:50%;transform:translateX(-50%);
-    width:700px;height:400px;pointer-events:none;
+  <div style="position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:700px;height:400px;pointer-events:none;
     background:radial-gradient(ellipse,rgba(124,106,247,.12) 0%,transparent 70%);"></div>
-  <div style="background:#1a1a22;border:1px solid #2e2e40;border-radius:16px;
-    padding:44px 40px;width:360px;text-align:center;
-    box-shadow:0 24px 80px rgba(0,0,0,.6);">
-    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:6px;
-      background:linear-gradient(135deg,#c4b9ff,#7c6af7,#3fc8f2);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
-      📝 微信读书笔记</h1>
+  <div style="background:#1a1a22;border:1px solid #2e2e40;border-radius:16px;padding:44px 40px;width:360px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.6);">
+    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:6px;background:linear-gradient(135deg,#c4b9ff,#7c6af7,#3fc8f2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">📝 微信读书笔记</h1>
     <p style="font-size:.85rem;color:#8888aa;margin-bottom:28px;">请输入访问密码</p>
-    <input id="authPwd" type="password" placeholder="密码"
-      style="width:100%;padding:12px 16px;background:#22222e;border:1px solid #2e2e40;
-        border-radius:9px;color:#e8e8f0;font-size:1rem;font-family:inherit;
-        outline:none;text-align:center;letter-spacing:.1em;box-sizing:border-box;"
-      onkeydown="if(event.key==='Enter')checkAuth()">
+    <input id="authPwd" type="password" placeholder="密码" style="width:100%;padding:12px 16px;background:#22222e;border:1px solid #2e2e40;border-radius:9px;color:#e8e8f0;font-size:1rem;font-family:inherit;outline:none;text-align:center;letter-spacing:.1em;box-sizing:border-box;" onkeydown="if(event.key==='Enter')checkAuth()">
     <div id="authErr" style="color:#f2564f;font-size:.8rem;margin-top:10px;min-height:20px;"></div>
-    <button onclick="checkAuth()" style="width:100%;margin-top:18px;padding:13px;
-      background:linear-gradient(135deg,#7c6af7,#5a4de0);border:none;border-radius:9px;
-      color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit;">
-      进入</button>
+    <button onclick="checkAuth()" style="width:100%;margin-top:18px;padding:13px;background:linear-gradient(135deg,#7c6af7,#5a4de0);border:none;border-radius:9px;color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit;">进入</button>
   </div>
 </div>
 <script>
 (function(){
-  const HASH = 'df0c03783f8434c372d084c40b9acde9e4bc59fbcdf41ea9ea2a82452ce97c47';
-  const KEY = 'wr_auth';
-  async function sha256(s) {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-  }
-  async function checkAuth() {
-    const pwd = document.getElementById('authPwd').value;
-    const h = await sha256(pwd);
-    if (h === HASH) {
-      localStorage.setItem(KEY, h);
-      document.getElementById('authGate').style.display = 'none';
-    } else {
-      document.getElementById('authErr').textContent = '密码错误，请重试';
-    }
-  }
-  window.checkAuth = checkAuth;
-  if (localStorage.getItem(KEY) !== HASH) {
-    document.getElementById('authGate').style.display = 'flex';
-  } else {
-    document.getElementById('authGate').style.display = 'none';
-  }
+  const HASH='df0c03783f8434c372d084c40b9acde9e4bc59fbcdf41ea9ea2a82452ce97c47',KEY='wr_auth';
+  async function sha256(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
+  async function checkAuth(){const h=await sha256(document.getElementById('authPwd').value);if(h===HASH){localStorage.setItem(KEY,h);document.getElementById('authGate').style.display='none';}else document.getElementById('authErr').textContent='密码错误，请重试';}
+  window.checkAuth=checkAuth;
+  document.getElementById('authGate').style.display=localStorage.getItem(KEY)===HASH?'none':'flex';
 })();
 </script>
-
 </body>
 </html>
