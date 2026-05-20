@@ -163,7 +163,56 @@ a{color:inherit;text-decoration:none;}
 .ins-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
 .ins-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px;}
 .ins-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
-@media(max-width:768px){.ins-grid-2,.ins-grid-3,.ins-grid-4{grid-template-columns:1fr;}.list-layout{flex-direction:column;}.sidebar{width:100%;height:auto;}}
+/* ── Mobile sidebar overlay & close ── */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:199;}
+.sidebar-overlay.visible{display:block;}
+.sidebar-close{display:none;position:absolute;top:10px;right:10px;background:transparent;border:none;color:var(--t2);font-size:1.3rem;cursor:pointer;padding:6px 10px;line-height:1;z-index:1;}
+.mobile-filter-btn{display:none;align-items:center;gap:4px;padding:5px 10px;background:rgba(124,106,247,0.12);border:1px solid rgba(124,106,247,0.3);border-radius:6px;color:var(--acc);font-size:0.75rem;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;}
+/* ── Graph filter scrollable row ── */
+.graph-filter-scroll{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;}
+/* ── Theme insights grid ── */
+.ins-theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+@media(max-width:768px){
+  .ins-grid-2,.ins-grid-3,.ins-grid-4{grid-template-columns:1fr;}
+  .ins-theme-grid{grid-template-columns:1fr;}
+  .header{padding:10px 14px 0;}
+  .header-top{margin-bottom:8px;}
+  .header-top h1{font-size:1rem;}
+  .hdr-stats{gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .hdr-stats>span{font-size:0.7rem;}
+  .sync-status{display:none;}
+  .sync-btn{font-size:0.7rem;padding:3px 8px;}
+  .tab-nav{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .tab-nav::-webkit-scrollbar{display:none;}
+  .tab-btn{padding:8px 16px;font-size:0.82rem;white-space:nowrap;flex-shrink:0;}
+  .list-layout{flex-direction:row;height:calc(100dvh - 84px);}
+  .sidebar{position:fixed;left:-290px;top:0;bottom:0;width:270px;height:100%;z-index:200;padding-top:14px;transition:left 0.28s ease;box-shadow:none;overflow-y:auto;}
+  .sidebar.open{left:0;box-shadow:4px 0 24px rgba(0,0,0,0.55);}
+  .sidebar-close{display:block;}
+  .mobile-filter-btn{display:flex;}
+  .main-area{width:100%;height:100%;}
+  .toolbar{padding:8px 10px;gap:6px;}
+  .search-input{font-size:16px;}
+  .sort-group{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0;}
+  .sort-group::-webkit-scrollbar{display:none;}
+  .result-count{display:none;}
+  .random-btn{padding:5px 8px;font-size:0.7rem;}
+  .note-card{padding:12px 14px;}
+  .nc-highlight,.nc-thought{font-size:15px;}
+  .pagination{padding:8px 6px;gap:3px;overflow-x:auto;flex-wrap:nowrap;}
+  .page-btn{padding:6px 10px;min-width:34px;touch-action:manipulation;flex-shrink:0;}
+  .insights-layout{padding:14px 10px;}
+  #knowledgeGraph{height:320px !important;}
+  .card-title{flex-wrap:wrap;}
+  .graph-hint-text{display:none;}
+  .graph-filter-scroll{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .graph-filter-scroll::-webkit-scrollbar{display:none;}
+  .graph-filter-scroll .sort-btn{flex-shrink:0;}
+  .similar-grid{grid-template-columns:1fr !important;}
+  .modal{max-width:95vw;max-height:88vh;padding:16px;}
+  .notes-masonry{column-count:1 !important;}
+}
 .card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;}
 .card-title{font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--t2);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
 .card-title .dot{width:5px;height:5px;border-radius:50%;background:var(--acc);}
@@ -281,8 +330,10 @@ mark.notion-mark{background:rgba(255,212,0,0.3);color:inherit;outline:none;}
 
 <!-- ══ LIST TAB ══ -->
 <div id="tab-list" class="tab-pane active">
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 <div class="list-layout">
   <div class="sidebar">
+  <button class="sidebar-close" onclick="closeSidebar()">✕</button>
     <div class="filter-section">
       <div class="filter-label">笔记类型</div>
       <div class="filter-pills">
@@ -323,6 +374,7 @@ mark.notion-mark{background:rgba(255,212,0,0.3);color:inherit;outline:none;}
   </div>
   <div class="main-area">
     <div class="toolbar">
+      <button class="mobile-filter-btn" onclick="openSidebar()">☰ 筛选</button>
       <input type="text" class="search-input" id="searchInput" placeholder="搜索笔记内容、书名、作者…" oninput="onSearch(this.value)">
       <div class="sort-group">
         <button class="sort-btn active" data-sort="new" onclick="setSort('new',this)">最新</button>
@@ -394,17 +446,17 @@ mark.notion-mark{background:rgba(255,212,0,0.3);color:inherit;outline:none;}
   <!-- Knowledge Graph (D3 force) -->
   <div class="card" style="margin-bottom:20px;" id="graphCard">
     <div class="card-title"><span class="dot" style="background:var(--acc3)"></span>知识点图谱
-      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
-        <span style="font-size:0.7rem;color:var(--t3);">节点大小 = 出现次数 · 连线粗细 = 共现频率</span>
-        <button class="sort-btn active" id="gfAll" onclick="graphFilter('all',this)">全部</button>
-        <button class="sort-btn" id="gfBiz"  onclick="graphFilter('business',this)">商业</button>
-        <button class="sort-btn" id="gfHlth" onclick="graphFilter('health',this)">健康</button>
-        <button class="sort-btn" id="gfPhil" onclick="graphFilter('philosophy',this)">哲学</button>
-        <button class="sort-btn" id="gfYi"   onclick="graphFilter('yijing',this)">国学</button>
-        <button class="sort-btn" id="gfLit"  onclick="graphFilter('literature',this)">文学</button>
-        <button class="sort-btn" id="gfSci"  onclick="graphFilter('science',this)">科学</button>
-        <button class="sort-btn" id="gfPsy"  onclick="graphFilter('psychology',this)">心理</button>
-      </div>
+      <span class="graph-hint-text" style="font-size:0.7rem;color:var(--t3);margin-left:auto;">节点大小 = 出现次数 · 连线粗细 = 共现频率</span>
+    </div>
+    <div class="graph-filter-scroll">
+      <button class="sort-btn active" id="gfAll" onclick="graphFilter('all',this)">全部</button>
+      <button class="sort-btn" id="gfBiz"  onclick="graphFilter('business',this)">商业</button>
+      <button class="sort-btn" id="gfHlth" onclick="graphFilter('health',this)">健康</button>
+      <button class="sort-btn" id="gfPhil" onclick="graphFilter('philosophy',this)">哲学</button>
+      <button class="sort-btn" id="gfYi"   onclick="graphFilter('yijing',this)">国学</button>
+      <button class="sort-btn" id="gfLit"  onclick="graphFilter('literature',this)">文学</button>
+      <button class="sort-btn" id="gfSci"  onclick="graphFilter('science',this)">科学</button>
+      <button class="sort-btn" id="gfPsy"  onclick="graphFilter('psychology',this)">心理</button>
     </div>
     <!-- Theme legend -->
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;" id="graphLegend"></div>
@@ -574,6 +626,14 @@ function setTheme(v,el){
 function setBook(v){filterBook=v;go(1);}
 function setAuthor(v){filterAuthor=v;go(1);}
 function setSort(v,el){sortOrder=v;document.querySelectorAll('[data-sort]').forEach(b=>b.classList.remove('active'));el.classList.add('active');go(1);}
+function openSidebar(){
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('visible');
+}
+function closeSidebar(){
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('visible');
+}
 function clearFilters(){
   filterType='all';filterYear='';filterTheme='';filterBook='';filterAuthor='';filterCat='';searchQuery='';sortOrder='new';
   document.getElementById('searchInput').value='';
@@ -582,6 +642,7 @@ function clearFilters(){
   document.querySelector('[data-sort="new"]').classList.add('active');
   document.getElementById('bookSelect').value='';
   document.getElementById('authorSelect').value='';
+  closeSidebar();
   go(1);
 }
 function onSearch(v){clearTimeout(searchTimer);searchTimer=setTimeout(()=>{searchQuery=v.toLowerCase().trim();go(1);},250);}
@@ -1292,7 +1353,7 @@ const INSIGHT_TEXT={
 };
 function buildThemeInsights(){
   const c=document.getElementById('themeInsights');
-  c.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+  c.innerHTML=`<div class="ins-theme-grid">
   ${Object.entries(WR_THEME_STATS).map(([k,v],i)=>{
     const label=WR_THEME_LABELS[k]||k;const desc=INSIGHT_TEXT[k]||'';
     return `<div style="padding:12px;background:var(--s2);border-radius:8px;border:1px solid var(--border);">
