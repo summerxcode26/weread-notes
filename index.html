@@ -956,179 +956,173 @@ function buildKnowledgeGraph(filterTheme) {
   const r = d => Math.max(7, Math.min(26, Math.sqrt(d.count / maxCount) * 34));
   const clusterR = d => Math.max(38, Math.min(80, Math.sqrt(d.totalCount) * 4));
 
-  // ── 5-Layer zoom system ──────────────────────────────────────────────────
-  // L1 k < 0.22  : domain labels only (no shapes)
-  // L2 0.22–0.45 : theme cluster bubbles
-  // L3 0.45–0.68 : major nodes (top 35 by count) + inter-major edges
-  // L4 0.68–1.20 : all nodes + all edges (normal)
-  // L5 k ≥ 1.20  : all nodes + enriched edges (more opaque)
-
-  // ── L1: label layer ──
-  const labelLayer = g.append('g').style('opacity', 1).style('pointer-events', 'none');
-  labelLayer.selectAll('text').data(clusterData).join('text')
-    .attr('x', d => d.x).attr('y', d => d.y).attr('text-anchor','middle').attr('dominant-baseline','middle')
-    .attr('fill', d => THEME_COLORS[d.theme]||'#aaa').attr('font-size', 22).attr('font-weight', 700)
-    .style('letter-spacing', '0.06em')
-    .text(d => labels[d.theme]||d.theme);
-
-  // ── L2: cluster bubble layer ──
-  const clusterLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
-  clusterLayer.selectAll('circle').data(clusterData).join('circle')
-    .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', clusterR)
-    .attr('fill', d => THEME_COLORS[d.theme]||'#555').attr('fill-opacity', 0.13)
-    .attr('stroke', d => THEME_COLORS[d.theme]||'#555').attr('stroke-width', 2).attr('stroke-opacity', 0.55);
-  clusterLayer.selectAll('text.cname').data(clusterData).join('text').attr('class','cname')
-    .attr('x', d => d.x).attr('y', d => d.y - 6).attr('text-anchor','middle')
-    .attr('fill', d => THEME_COLORS[d.theme]||'#aaa').attr('font-size', 15).attr('font-weight', 600)
-    .text(d => labels[d.theme]||d.theme);
-  clusterLayer.selectAll('text.ccnt').data(clusterData).join('text').attr('class','ccnt')
-    .attr('x', d => d.x).attr('y', d => d.y + 14).attr('text-anchor','middle')
-    .attr('fill', '#8888aa').attr('font-size', 11)
-    .text(d => `${d.count} 个知识点`);
-
-  // ── L3: major nodes layer (top 35 by count) ──
-  const majorNodes = [...nodes].sort((a,b) => b.count - a.count).slice(0, 35);
+  // ── Build node tiers ──
+  const hubNodes = Object.entries(themeGroups).flatMap(([, ns]) =>
+    [...ns].sort((a,b) => b.count - a.count).slice(0, 10)
+  );
+  const hubSet = new Set(hubNodes.map(n => n.id));
+  const hubLinks = links.filter(l => {
+    const s = typeof l.source==='object'?l.source.id:l.source;
+    const t = typeof l.target==='object'?l.target.id:l.target;
+    return hubSet.has(s) && hubSet.has(t);
+  });
+  const majorNodes = [...nodes].sort((a,b) => b.count - a.count).slice(0, 50);
   const majorSet = new Set(majorNodes.map(n => n.id));
   const majorLinks = links.filter(l => {
-    const s = typeof l.source === 'object' ? l.source.id : l.source;
-    const t = typeof l.target === 'object' ? l.target.id : l.target;
+    const s = typeof l.source==='object'?l.source.id:l.source;
+    const t = typeof l.target==='object'?l.target.id:l.target;
     return majorSet.has(s) && majorSet.has(t);
   });
+  const strokeColor = (d, ns) => {
+    const sId = typeof d.source==='object'?d.source.id:d.source;
+    const nd = ns.find(n=>n.id===sId); return nd?THEME_COLORS[nd.theme]||'#555':'#555';
+  };
 
+  // ── Zone 1: Overview — large bubbles + big labels (most zoomed-out) ──
+  const overviewLayer = g.append('g').style('opacity', 1).style('pointer-events', 'all');
+  overviewLayer.selectAll('circle').data(clusterData).join('circle')
+    .attr('cx', d=>d.x).attr('cy', d=>d.y)
+    .attr('r', d=>Math.max(54, Math.min(92, Math.sqrt(d.totalCount)*5.8)))
+    .attr('fill', d=>THEME_COLORS[d.theme]||'#555').attr('fill-opacity', 0.14)
+    .attr('stroke', d=>THEME_COLORS[d.theme]||'#555').attr('stroke-width', 2.5).attr('stroke-opacity', 0.65);
+  overviewLayer.selectAll('text.ovlbl').data(clusterData).join('text').attr('class','ovlbl')
+    .attr('x', d=>d.x).attr('y', d=>d.y-8).attr('text-anchor','middle')
+    .attr('fill', d=>THEME_COLORS[d.theme]||'#aaa').attr('font-size', 22).attr('font-weight', 700)
+    .style('letter-spacing','0.04em').text(d=>labels[d.theme]||d.theme);
+  overviewLayer.selectAll('text.ovcnt').data(clusterData).join('text').attr('class','ovcnt')
+    .attr('x', d=>d.x).attr('y', d=>d.y+18).attr('text-anchor','middle')
+    .attr('fill','#8888aa').attr('font-size', 12).text(d=>`${d.count} 个知识点`);
+
+  // ── Zone 2: Cluster — medium bubbles ──
+  const clusterLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
+  clusterLayer.selectAll('circle').data(clusterData).join('circle')
+    .attr('cx', d=>d.x).attr('cy', d=>d.y).attr('r', clusterR)
+    .attr('fill', d=>THEME_COLORS[d.theme]||'#555').attr('fill-opacity', 0.13)
+    .attr('stroke', d=>THEME_COLORS[d.theme]||'#555').attr('stroke-width', 2).attr('stroke-opacity', 0.55);
+  clusterLayer.selectAll('text.cname').data(clusterData).join('text').attr('class','cname')
+    .attr('x', d=>d.x).attr('y', d=>d.y-6).attr('text-anchor','middle')
+    .attr('fill', d=>THEME_COLORS[d.theme]||'#aaa').attr('font-size', 15).attr('font-weight', 600)
+    .text(d=>labels[d.theme]||d.theme);
+  clusterLayer.selectAll('text.ccnt').data(clusterData).join('text').attr('class','ccnt')
+    .attr('x', d=>d.x).attr('y', d=>d.y+14).attr('text-anchor','middle')
+    .attr('fill','#8888aa').attr('font-size', 11).text(d=>`${d.count} 个知识点`);
+
+  // ── Zone 3: Hub nodes (top 10/theme) ──
+  const hubLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
+  const hubLinkEl = hubLayer.append('g').selectAll('line').data(hubLinks).join('line')
+    .attr('stroke', d=>strokeColor(d,nodes))
+    .attr('stroke-width', d=>Math.max(1, Math.min(4, d.weight/maxWeight*4))).attr('stroke-opacity', 0.25);
+  const hubNodeEl = hubLayer.append('g').selectAll('g.gnode').data(hubNodes).join('g').attr('class','gnode')
+    .on('click', (e,d) => { e.stopPropagation(); svg.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity.translate(W/2-(d.x||0)*0.85, H/2-(d.y||0)*0.85).scale(0.85)); setTimeout(()=>selectNode(d,nodeEl,linkEl,nodes,links),320); })
+    .on('mouseover',(e,d)=>showGraphTooltip(e,d,nodes,links)).on('mousemove',moveGraphTooltip).on('mouseout',hideGraphTooltip);
+  hubNodeEl.append('circle').attr('r', r)
+    .attr('fill', d=>THEME_COLORS[d.theme]||'#666').attr('fill-opacity', 0.8)
+    .attr('stroke', d=>THEME_COLORS[d.theme]||'#666').attr('stroke-opacity', 0.85);
+  hubNodeEl.append('text').text(d=>d.label).attr('text-anchor','middle')
+    .attr('dy', d=>r(d)+12).attr('font-size', d=>Math.max(10,Math.min(13,r(d)*0.7)));
+
+  // ── Zone 4: Major nodes (top 50) ──
   const majorLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
   const majorLinkEl = majorLayer.append('g').selectAll('line').data(majorLinks).join('line')
-    .attr('stroke', d => {
-      const sId = typeof d.source === 'object' ? d.source.id : d.source;
-      const node = nodes.find(n => n.id === sId);
-      return node ? THEME_COLORS[node.theme]||'#555' : '#555';
-    })
-    .attr('stroke-width', d => Math.max(1, Math.min(4, d.weight / maxWeight * 4)))
-    .attr('stroke-opacity', 0.28);
+    .attr('stroke', d=>strokeColor(d,nodes))
+    .attr('stroke-width', d=>Math.max(1,Math.min(4,d.weight/maxWeight*4))).attr('stroke-opacity', 0.28);
   const majorNodeEl = majorLayer.append('g').selectAll('g.gnode').data(majorNodes).join('g').attr('class','gnode')
-    .on('click', (e, d) => {
-      e.stopPropagation();
-      // Zoom into detail level, then select
-      svg.transition().duration(350).call(
-        zoomBehavior.transform,
-        d3.zoomIdentity.translate(W/2 - (d.x||0)*0.9, H/2 - (d.y||0)*0.9).scale(0.9)
-      );
-      setTimeout(() => selectNode(d, nodeEl, linkEl, nodes, links), 380);
-    })
-    .on('mouseover', (e, d) => showGraphTooltip(e, d, nodes, links))
-    .on('mousemove', moveGraphTooltip)
-    .on('mouseout',  hideGraphTooltip);
+    .on('click', (e,d) => { e.stopPropagation(); svg.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity.translate(W/2-(d.x||0)*0.9, H/2-(d.y||0)*0.9).scale(0.9)); setTimeout(()=>selectNode(d,nodeEl,linkEl,nodes,links),320); })
+    .on('mouseover',(e,d)=>showGraphTooltip(e,d,nodes,links)).on('mousemove',moveGraphTooltip).on('mouseout',hideGraphTooltip);
   majorNodeEl.append('circle').attr('r', r)
-    .attr('fill', d => THEME_COLORS[d.theme]||'#666').attr('fill-opacity', 0.8)
-    .attr('stroke', d => THEME_COLORS[d.theme]||'#666').attr('stroke-opacity', 0.85);
-  majorNodeEl.append('text').text(d => d.label).attr('text-anchor','middle')
-    .attr('dy', d => r(d) + 12).attr('font-size', d => Math.max(10, Math.min(13, r(d)*0.7)));
+    .attr('fill', d=>THEME_COLORS[d.theme]||'#666').attr('fill-opacity', 0.8)
+    .attr('stroke', d=>THEME_COLORS[d.theme]||'#666').attr('stroke-opacity', 0.85);
+  majorNodeEl.append('text').text(d=>d.label).attr('text-anchor','middle')
+    .attr('dy', d=>r(d)+12).attr('font-size', d=>Math.max(10,Math.min(13,r(d)*0.7)));
 
-  // ── L4 + L5: full detail layer ──
+  // ── Zone 5: Detail (all nodes) ──
   const detailLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
-
   const linkEl = detailLayer.append('g').selectAll('line')
-    .data(links).join('line').attr('class', 'glink')
-    .attr('stroke', d => {
-      const sId = typeof d.source === 'object' ? d.source.id : d.source;
-      const node = nodes.find(n => n.id === sId);
-      return node ? THEME_COLORS[node.theme]||'#555' : '#555';
-    })
-    .attr('stroke-width', d => Math.max(0.8, Math.min(5, d.weight / maxWeight * 5)))
-    .attr('stroke-opacity', 0.28);
-
+    .data(links).join('line').attr('class','glink')
+    .attr('stroke', d=>strokeColor(d,nodes))
+    .attr('stroke-width', d=>Math.max(0.8,Math.min(5,d.weight/maxWeight*5))).attr('stroke-opacity', 0.28);
   const nodeEl = detailLayer.append('g').selectAll('g.gnode')
-    .data(nodes).join('g').attr('class', 'gnode')
+    .data(nodes).join('g').attr('class','gnode')
     .call(d3.drag()
-      .on('start', (e, d) => { d._dragged = false; d.fx = d.x; d.fy = d.y; })
-      .on('drag',  (e, d) => {
-        if (!d._dragged) { d._dragged = true; if (!e.active) sim.alphaTarget(0.3).restart(); }
-        d.fx = e.x; d.fy = e.y;
-      })
-      .on('end',   (e, d) => {
-        if (!e.active) sim.alphaTarget(0);
-        if (!d._dragged) { d.fx = null; d.fy = null; }
-      })
+      .on('start',(e,d)=>{ d._dragged=false; d.fx=d.x; d.fy=d.y; })
+      .on('drag', (e,d)=>{ if(!d._dragged){d._dragged=true;if(!e.active)sim.alphaTarget(0.3).restart();} d.fx=e.x; d.fy=e.y; })
+      .on('end',  (e,d)=>{ if(!e.active)sim.alphaTarget(0); if(!d._dragged){d.fx=null;d.fy=null;} })
     )
-    .on('click', (e, d) => { e.stopPropagation(); selectNode(d, nodeEl, linkEl, nodes, links); })
-    .on('mouseover', (e, d) => showGraphTooltip(e, d, nodes, links))
-    .on('mousemove', moveGraphTooltip)
-    .on('mouseout', hideGraphTooltip);
+    .on('click',(e,d)=>{ e.stopPropagation(); selectNode(d,nodeEl,linkEl,nodes,links); })
+    .on('mouseover',(e,d)=>showGraphTooltip(e,d,nodes,links)).on('mousemove',moveGraphTooltip).on('mouseout',hideGraphTooltip);
+  nodeEl.append('circle').attr('r', r)
+    .attr('fill', d=>THEME_COLORS[d.theme]||'#666').attr('fill-opacity', 0.85)
+    .attr('stroke', d=>THEME_COLORS[d.theme]||'#666').attr('stroke-opacity', 0.9);
+  nodeEl.append('text').text(d=>d.label).attr('text-anchor','middle')
+    .attr('dy', d=>r(d)+12).attr('font-size', d=>Math.max(10,Math.min(13,r(d)*0.7)));
 
-  nodeEl.append('circle')
-    .attr('r', r)
-    .attr('fill', d => THEME_COLORS[d.theme]||'#666').attr('fill-opacity', 0.85)
-    .attr('stroke', d => THEME_COLORS[d.theme]||'#666').attr('stroke-opacity', 0.9);
-
-  nodeEl.append('text')
-    .text(d => d.label).attr('text-anchor', 'middle')
-    .attr('dy', d => r(d) + 12)
-    .attr('font-size', d => Math.max(10, Math.min(13, r(d) * 0.7)));
-
-  // ── Force simulation with semantic attraction to theme centers ──
+  // ── Force simulation ──
   const sim = d3.forceSimulation(nodes)
-    .force('link',    d3.forceLink(links).id(d => d.id).distance(d => 65 + 55/(d.weight+1)))
-    .force('charge',  d3.forceManyBody().strength(d => -110 - r(d)*2.5))
+    .force('link',    d3.forceLink(links).id(d=>d.id).distance(d=>65+55/(d.weight+1)))
+    .force('charge',  d3.forceManyBody().strength(d=>-110-r(d)*2.5))
     .force('center',  d3.forceCenter(W/2, H/2).strength(0.04))
-    .force('collide', d3.forceCollide().radius(d => r(d)+9))
-    .force('themeX',  d3.forceX(d => tp(d.theme)[0]).strength(0.07))
-    .force('themeY',  d3.forceY(d => tp(d.theme)[1]).strength(0.07))
+    .force('collide', d3.forceCollide().radius(d=>r(d)+9))
+    .force('themeX',  d3.forceX(d=>tp(d.theme)[0]).strength(0.07))
+    .force('themeY',  d3.forceY(d=>tp(d.theme)[1]).strength(0.07))
     .on('tick', () => {
-      linkEl.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-      majorLinkEl.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-                 .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-      nodeEl.attr('transform', d => `translate(${d.x},${d.y})`);
-      majorNodeEl.attr('transform', d => `translate(${d.x},${d.y})`);
+      linkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+      nodeEl.attr('transform',d=>`translate(${d.x},${d.y})`);
+      hubLinkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+      hubNodeEl.attr('transform',d=>`translate(${d.x},${d.y})`);
+      majorLinkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+      majorNodeEl.attr('transform',d=>`translate(${d.x},${d.y})`);
     });
 
   _graphSim = sim;
 
-  // ── 5-layer zoom transitions ──
-  // Boundaries: L1<0.22, L2=0.22–0.45, L3=0.45–0.68, L4=0.68–1.20, L5≥1.20
-  let _zoomLevel = 0;  // 0 = uninitialized, forces first applyZoomLevel to run
-  const DUR = 200;
+  // ── Smooth-step: eased 0→1 between scale a and b ──
+  function sst(k, a, b) {
+    const t = Math.max(0, Math.min(1, (k-a)/(b-a)));
+    return t*t*(3-2*t);
+  }
 
-  function applyZoomLevel(lv) {
-    if (lv === _zoomLevel) return;
-    _zoomLevel = lv;
-    // Reset all
-    [labelLayer, clusterLayer, majorLayer, detailLayer].forEach(lay =>
-      lay.transition().duration(DUR).style('opacity', 0).style('pointer-events', 'none')
-    );
-    if (lv === 1) {
-      labelLayer.transition().duration(DUR).style('opacity', 1).style('pointer-events','none');
-    } else if (lv === 2) {
-      clusterLayer.transition().duration(DUR).style('opacity', 1).style('pointer-events','all');
-    } else if (lv === 3) {
-      majorLayer.transition().duration(DUR).style('opacity', 1).style('pointer-events','all');
-    } else {
-      // L4 and L5: same detailLayer, just adjust edge opacity
-      detailLayer.transition().duration(DUR).style('opacity', 1).style('pointer-events','all');
-      linkEl.transition().duration(DUR).attr('stroke-opacity', lv === 5 ? 0.48 : 0.28);
-    }
+  // ── 10-zone continuous layer system ──────────────────────────────────────
+  // Zone  1: k < 0.13        overview only (large bubbles + big text)
+  // Zone  2: 0.13 – 0.22     overview → cluster crossfade
+  // Zone  3: 0.22 – 0.33     cluster only
+  // Zone  4: 0.33 – 0.48     cluster → hub crossfade
+  // Zone  5: 0.48 – 0.60     hub nodes (top 10/theme)
+  // Zone  6: 0.60 – 0.76     hub → major crossfade
+  // Zone  7: 0.76 – 0.80     major nodes (top 50)
+  // Zone  8: 0.80 – 0.95     major → detail crossfade
+  // Zone  9: 0.95 – 1.80     full detail, edges lightening
+  // Zone 10: k ≥ 1.80        full detail, edges fully opaque
+  function updateLayers(k) {
+    const ovOp  = 1 - sst(k, 0.13, 0.22);
+    const clOp  = sst(k, 0.13, 0.22) * (1 - sst(k, 0.33, 0.48));
+    const hubOp = sst(k, 0.33, 0.48) * (1 - sst(k, 0.60, 0.76));
+    const majOp = sst(k, 0.60, 0.76) * (1 - sst(k, 0.80, 0.95));
+    const detOp = sst(k, 0.80, 0.95);
+    const edgeOp = 0.20 + sst(k, 0.95, 2.20) * 0.42;
+    overviewLayer.style('opacity', ovOp).style('pointer-events', ovOp>0.25?'all':'none');
+    clusterLayer.style('opacity', clOp).style('pointer-events', clOp>0.25?'all':'none');
+    hubLayer.style('opacity', hubOp).style('pointer-events', hubOp>0.25?'all':'none');
+    majorLayer.style('opacity', majOp).style('pointer-events', majOp>0.25?'all':'none');
+    detailLayer.style('opacity', detOp).style('pointer-events', detOp>0.25?'all':'none');
+    if (detOp > 0) linkEl.attr('stroke-opacity', edgeOp);
   }
 
   const zoomBehavior = d3.zoom()
     .scaleExtent([0.10, 4])
     .on('zoom', e => {
       g.attr('transform', e.transform);
-      const k = e.transform.k;
-      const lv = k < 0.22 ? 1 : k < 0.45 ? 2 : k < 0.68 ? 3 : k < 1.20 ? 4 : 5;
-      applyZoomLevel(lv);
+      updateLayers(e.transform.k);
     });
 
-  // Initial zoom is k=1 → L4 (full detail)
-  applyZoomLevel(4);
+  updateLayers(1.0);
   svg.call(zoomBehavior);
 
-  // Fade-in hint
   const hint = svg.append('text')
-    .attr('x', W/2).attr('y', H - 10).attr('text-anchor', 'middle')
-    .attr('font-size', 11).attr('fill', '#555570')
-    .text('缩小查看主题 · 放大查看知识点 · 5 层缩放');
-  setTimeout(() => hint.transition().duration(1500).style('opacity',0).remove(), 4000);
+    .attr('x', W/2).attr('y', H-10).attr('text-anchor','middle')
+    .attr('font-size', 11).attr('fill','#555570')
+    .text('缩小查看主题 · 放大看细节 · 10 层缩放');
+  setTimeout(()=>hint.transition().duration(1500).style('opacity',0).remove(), 4000);
 
-  // Click outside deselects
   svg.on('click', () => {
     nodeEl.classed('faded', false).classed('highlighted', false);
     linkEl.classed('faded', false);
