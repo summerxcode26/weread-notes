@@ -106,6 +106,69 @@ for theme, concepts in THEME_MAP.items():
         if c not in CONCEPT_THEME:
             CONCEPT_THEME[c] = theme
 
+# ─────────────────────────────────────────────
+# Sub-theme taxonomy — semantic parent groups
+# ─────────────────────────────────────────────
+SUBTHEME_MAP = {
+    "health": {
+        "h_cancer":  {"name": "肿瘤/癌变",  "concepts": ["细胞","癌症","肿瘤","基因","癌细胞","化疗","放疗","基因突变","端粒","干细胞","表观遗传","细胞分裂"]},
+        "h_metabol": {"name": "代谢/内分泌", "concepts": ["代谢","胰岛素","血糖","脂肪酸","胆固醇","益生菌","肠道菌","维生素","蛋白质","线粒体","自噬"]},
+        "h_immune":  {"name": "免疫/炎症",   "concepts": ["免疫","炎症","免疫系统","炎性因子","氧化应激","抗氧化"]},
+        "h_disease": {"name": "疾病/治疗",   "concepts": ["患者","医学","药物","心脏病","糖尿病","阿尔茨海默","神经"]},
+    },
+    "philosophy": {
+        "p_ontol":  {"name": "本体/形而上", "concepts": ["存在","本质","形而上","本体","现象","虚无","绝对","相对","形而下"]},
+        "p_epistem":{"name": "认识/逻辑",   "concepts": ["意识","逻辑","理性","认识论","方法论","演绎","归纳","命题","悖论","实证","第一性原理","批判性思维","还原论","整体论","系统思维"]},
+        "p_ethics": {"name": "道德/伦理",   "concepts": ["哲学","道德","伦理","自由","真理","意志","信仰","灵魂","智慧"]},
+        "p_dialec": {"name": "辩证/唯物",   "concepts": ["辩证","唯物","唯心","客观","主观"]},
+    },
+    "yijing": {
+        "y_canon":  {"name": "经典/爻辞",  "concepts": ["易经","八卦","卦象","卦辞","爻辞","象传","彖传","系辞","周易","六十四卦","六爻","梅花易数","河图","洛书","易学"]},
+        "y_cosmol": {"name": "阴阳/五行",  "concepts": ["阴阳","五行","太极","天干","地支","乾卦","坤卦","天地人","阴阳五行"]},
+        "y_ruDao":  {"name": "儒道/经典",  "concepts": ["国学","道家","儒家","庄子","老子","道德经","孔子","孟子","荀子","礼记","春秋","诗经","四书五经"]},
+    },
+    "history": {
+        "h_dynasty":{"name": "朝代/帝王",  "concepts": ["朝代","皇帝","秦汉","唐宋","明清","封建","专制","汉武帝","秦始皇","唐太宗"]},
+        "h_modern": {"name": "近代/变革",  "concepts": ["革命","民国","殖民","改革","工业革命","启蒙运动","民主"]},
+        "h_theory": {"name": "史学/文明",  "concepts": ["历史","帝国","文明","考古","史书","王朝","历史观","历史规律","盛衰","兴亡","治乱","战争"]},
+    },
+    "literature": {
+        "l_classics":{"name": "古典/名著", "concepts": ["红楼梦","西游记","武侠","侠义","唐诗","宋词","古典","诗词","金庸"]},
+        "l_mystery": {"name": "推理/悬疑", "concepts": ["阿加莎","克里斯蒂","波洛","马普尔","悬疑","推理"]},
+        "l_craft":   {"name": "文学/技艺", "concepts": ["文学","诗歌","小说","散文","意象","典故","隐喻","叙事","修辞","文体","叙述者","视角","人物塑造","意境","浪漫主义","现实主义","意识流","叙事结构"]},
+    },
+    "business": {
+        "b_product": {"name": "产品/增长", "concepts": ["产品","市场","用户","增长","运营","数据","流量","SaaS","PMF","MVP","产品经理","商业模式","转化率"]},
+        "b_company": {"name": "企业/战略", "concepts": ["公司","团队","管理","战略","创业","品牌","竞争","垄断","生态","平台","供应链","价值链","护城河","商业逻辑","乔布斯","华为","任正非","苹果"]},
+        "b_finance": {"name": "营收/客户", "concepts": ["销售","客户","营收","利润","客户成功","续费率"]},
+    },
+    "science": {
+        "s_physics": {"name": "物理/宇宙", "concepts": ["量子","物理","宇宙","黑洞","相对论","量子力学","热力学","量子纠缠","粒子物理","宇宙学"]},
+        "s_biology": {"name": "生物/进化", "concepts": ["化学","进化","基因组","达尔文","自然选择","物种"]},
+        "s_complex": {"name": "复杂/系统", "concepts": ["熵","复杂系统","混沌","涌现","网络效应","幂次定律","正态分布","实验","假设","统计","概率","算法"]},
+        "s_ai":      {"name": "AI/数据",   "concepts": ["人工智能","机器学习","神经网络","大数据"]},
+    },
+    "psychology": {
+        "ps_cogn":  {"name": "认知/偏差",  "concepts": ["认知","认知偏差","确认偏误","损失厌恶","锚定效应","从众效应","行为经济学","神经科学"]},
+        "ps_emote": {"name": "情绪/压力",  "concepts": ["行为","情绪","动机","焦虑","抑郁","压力","潜意识","心理","社交焦虑"]},
+        "ps_growth":{"name": "成长/人格",  "concepts": ["心流","正念","冥想","自我效能","成长型思维","固定型思维","人格","依附理论","原生家庭","自我认同","亲密关系","共情"]},
+    },
+    "life": {
+        "l_habits":  {"name": "习惯/效率",  "concepts": ["习惯","时间管理","自律","专注","深度工作","执行力","创造力"]},
+        "l_minimal": {"name": "极简/断舍离","concepts": ["极简","断舍离","简约","精要主义"]},
+        "l_meaning": {"name": "意义/死亡",  "concepts": ["成长","幸福","情感","死亡","长寿","老龄化","价值观","人生意义","生死","孤独"]},
+        "l_social":  {"name": "关系/沟通",  "concepts": ["家庭","人际关系","沟通","领导力","心态","感恩","生活方式","第二曲线"]},
+    },
+}
+
+# Build reverse: concept → subtheme_id
+CONCEPT_SUBTHEME = {}
+for _theme, _subs in SUBTHEME_MAP.items():
+    for _stid, _info in _subs.items():
+        for _c in _info["concepts"]:
+            if _c not in CONCEPT_SUBTHEME:
+                CONCEPT_SUBTHEME[_c] = _stid
+
 
 def is_valid_term(term):
     if len(term) == 1:
@@ -248,12 +311,14 @@ def build_graph(notes_path, out_path, top_n=150):
     for t in selected:
         co = list(concept_coterms[t].keys())
         theme = assign_theme(t, co)
+        subtheme = CONCEPT_SUBTHEME.get(t, theme + "_gen")
         nodes.append({
             "id": t,
             "label": t,
             "count": term_total[t],
             "books": len(term_book_set[t]),
             "theme": theme,
+            "subtheme": subtheme,
         })
 
     # Build co-occurrence edges (within same note)
@@ -280,7 +345,41 @@ def build_graph(notes_path, out_path, top_n=150):
         "science": "科学", "psychology": "心理学", "life": "生活/成长", "general": "通用",
     }
 
-    graph = {"nodes": nodes, "links": links, "theme_labels": theme_labels}
+    # Build hierarchy: subtheme_id → {name, theme, children}
+    node_ids = {n["id"] for n in nodes}
+    hierarchy = {}
+    for theme, subs in SUBTHEME_MAP.items():
+        for st_id, st_info in subs.items():
+            children = [n["id"] for n in nodes if n.get("subtheme") == st_id]
+            if children:
+                hierarchy[st_id] = {"name": st_info["name"], "theme": theme, "children": children}
+    # Add catch-all subthemes for nodes that didn't match any explicit subtheme
+    for node in nodes:
+        st = node["subtheme"]
+        if st not in hierarchy:
+            theme = node["theme"]
+            hierarchy[st] = {
+                "name": theme_labels.get(theme, theme),
+                "theme": theme,
+                "children": [n["id"] for n in nodes if n["subtheme"] == st],
+            }
+
+    # Build semantic expansion: concept → top co-occurring concepts
+    semantic_expand = {}
+    for concept in selected:
+        related = [
+            t for t, cnt in concept_coterms[concept].most_common(14)
+            if cnt >= 2 and t in selected_set and t != concept
+        ]
+        semantic_expand[concept] = related[:8]
+
+    graph = {
+        "nodes": nodes,
+        "links": links,
+        "theme_labels": theme_labels,
+        "hierarchy": hierarchy,
+        "semantic_expand": semantic_expand,
+    }
     js = ("// Knowledge graph — auto-generated\n"
           "window.WR_GRAPH=" + json.dumps(graph, ensure_ascii=False, separators=(',', ':')) + ";\n")
     with open(out_path, "w", encoding="utf-8") as f:

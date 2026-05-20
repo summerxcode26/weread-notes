@@ -544,6 +544,7 @@ let filterBook='', filterAuthor='', filterCat='';
 let sortOrder='new';
 let searchTimer=null;
 let _insBuilt=false;
+let _semanticTerms=null;
 
 const COLORS=['#7c6af7','#f27b3f','#3fc8f2','#3fd68c','#f2c94c','#f27b8f','#9b84f5','#56ccf2','#8cec9b','#f5c56b'];
 const CAT_COLOR={'k':'#3fd68c','l':'#f2c94c','r':'#f27b3f','u':'#555570'};
@@ -645,7 +646,7 @@ function clearFilters(){
   closeSidebar();
   go(1);
 }
-function onSearch(v){clearTimeout(searchTimer);searchTimer=setTimeout(()=>{searchQuery=v.toLowerCase().trim();go(1);},250);}
+function onSearch(v){_semanticTerms=null;clearTimeout(searchTimer);searchTimer=setTimeout(()=>{searchQuery=v.toLowerCase().trim();go(1);},250);}
 function go(p){currentPage=p;applyFilters();}
 
 function applyFilters(){
@@ -656,7 +657,13 @@ function applyFilters(){
   if(filterTheme) notes=notes.filter(n=>n.tg&&n.tg.includes(filterTheme));
   if(filterBook) notes=notes.filter(n=>n.bk===filterBook);
   if(filterAuthor) notes=notes.filter(n=>n.au===filterAuthor);
-  if(searchQuery){const q=searchQuery;notes=notes.filter(n=>(n.tx&&n.tx.toLowerCase().includes(q))||(n.th&&n.th.toLowerCase().includes(q))||n.bk.toLowerCase().includes(q)||n.au.toLowerCase().includes(q));}
+  if(_semanticTerms&&_semanticTerms.length){
+    const terms=_semanticTerms;
+    notes=notes.filter(n=>{const t=((n.tx||'')+' '+(n.th||'')).toLowerCase();return terms.some(s=>t.includes(s));});
+  } else if(searchQuery){
+    const q=searchQuery;
+    notes=notes.filter(n=>(n.tx&&n.tx.toLowerCase().includes(q))||(n.th&&n.th.toLowerCase().includes(q))||n.bk.toLowerCase().includes(q)||n.au.toLowerCase().includes(q));
+  }
   // Sort
   if(sortOrder==='old') notes.sort((a,b)=>a.dt.localeCompare(b.dt));
   else if(sortOrder==='new') notes.sort((a,b)=>b.dt.localeCompare(a.dt));
@@ -966,17 +973,29 @@ function buildKnowledgeGraph(filterTheme) {
     const t = typeof l.target==='object'?l.target.id:l.target;
     return hubSet.has(s) && hubSet.has(t);
   });
-  const majorNodes = [...nodes].sort((a,b) => b.count - a.count).slice(0, 50);
-  const majorSet = new Set(majorNodes.map(n => n.id));
-  const majorLinks = links.filter(l => {
-    const s = typeof l.source==='object'?l.source.id:l.source;
-    const t = typeof l.target==='object'?l.target.id:l.target;
-    return majorSet.has(s) && majorSet.has(t);
-  });
   const strokeColor = (d, ns) => {
     const sId = typeof d.source==='object'?d.source.id:d.source;
     const nd = ns.find(n=>n.id===sId); return nd?THEME_COLORS[nd.theme]||'#555':'#555';
   };
+
+  // ── Subtheme semantic groups (from hierarchy) ──
+  const _hier = (typeof WR_GRAPH!=='undefined'?WR_GRAPH.hierarchy:null)||{};
+  const nodeMap = new Map(nodes.map(n=>[n.id,n]));
+  const subthemeData = Object.entries(_hier).map(([id,info])=>({
+    id, name:info.name, theme:info.theme,
+    children:(info.children||[]).filter(c=>nodeMap.has(c)),
+  })).filter(d=>d.children.length>0);
+  const subthemePos = {};
+  function updateSubthemePos(){
+    subthemeData.forEach(st=>{
+      const cns=st.children.map(c=>nodeMap.get(c)).filter(Boolean);
+      if(!cns.length)return;
+      subthemePos[st.id]={
+        x:cns.reduce((s,n)=>s+(n.x||0),0)/cns.length,
+        y:cns.reduce((s,n)=>s+(n.y||0),0)/cns.length,
+      };
+    });
+  }
 
   // ── Zone 1: Overview — large bubbles + big labels (most zoomed-out) ──
   const overviewLayer = g.append('g').style('opacity', 1).style('pointer-events', 'all');
@@ -1007,7 +1026,31 @@ function buildKnowledgeGraph(filterTheme) {
     .attr('x', d=>d.x).attr('y', d=>d.y+14).attr('text-anchor','middle')
     .attr('fill','#8888aa').attr('font-size', 11).text(d=>`${d.count} 个知识点`);
 
-  // ── Zone 3: Hub nodes (top 10/theme) ──
+  // ── Zone 3: Subtheme semantic groups ──
+  const subthemeLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
+  const subthemeNodeEl = subthemeLayer.append('g').selectAll('g.stnode')
+    .data(subthemeData).join('g').attr('class','stnode')
+    .on('click', (e,d)=>{ e.stopPropagation(); searchSubtheme(d); })
+    .on('mouseover', (e,d)=>{
+      const tip=document.getElementById('graphTooltip');
+      const color=THEME_COLORS[d.theme]||'#888';
+      tip.innerHTML=`<strong style="color:${color}">${d.name}</strong>
+        <div style="color:#8888aa;font-size:0.7rem;margin-top:3px;">${labels[d.theme]||d.theme}</div>
+        <div style="margin-top:5px;font-size:0.75rem;">包含 ${d.children.length} 个知识点</div>
+        <div style="font-size:0.68rem;color:#555570;margin-top:4px;">点击语义搜索该子主题笔记</div>`;
+      tip.style.display='block';
+    })
+    .on('mousemove',moveGraphTooltip).on('mouseout',hideGraphTooltip);
+  subthemeNodeEl.append('circle')
+    .attr('r', d=>Math.max(18,Math.min(38,Math.sqrt(d.children.length)*9)))
+    .attr('fill', d=>THEME_COLORS[d.theme]||'#555').attr('fill-opacity',0.17)
+    .attr('stroke', d=>THEME_COLORS[d.theme]||'#555').attr('stroke-width',1.8).attr('stroke-opacity',0.6);
+  subthemeNodeEl.append('text').text(d=>d.name)
+    .attr('text-anchor','middle').attr('dy','0.35em')
+    .attr('fill', d=>THEME_COLORS[d.theme]||'#aaa').attr('font-size',11).attr('font-weight',600)
+    .style('pointer-events','none');
+
+  // ── Zone 4: Hub nodes (top 10/theme) ──
   const hubLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
   const hubLinkEl = hubLayer.append('g').selectAll('line').data(hubLinks).join('line')
     .attr('stroke', d=>strokeColor(d,nodes))
@@ -1019,20 +1062,6 @@ function buildKnowledgeGraph(filterTheme) {
     .attr('fill', d=>THEME_COLORS[d.theme]||'#666').attr('fill-opacity', 0.8)
     .attr('stroke', d=>THEME_COLORS[d.theme]||'#666').attr('stroke-opacity', 0.85);
   hubNodeEl.append('text').text(d=>d.label).attr('text-anchor','middle')
-    .attr('dy', d=>r(d)+12).attr('font-size', d=>Math.max(10,Math.min(13,r(d)*0.7)));
-
-  // ── Zone 4: Major nodes (top 50) ──
-  const majorLayer = g.append('g').style('opacity', 0).style('pointer-events', 'none');
-  const majorLinkEl = majorLayer.append('g').selectAll('line').data(majorLinks).join('line')
-    .attr('stroke', d=>strokeColor(d,nodes))
-    .attr('stroke-width', d=>Math.max(1,Math.min(4,d.weight/maxWeight*4))).attr('stroke-opacity', 0.28);
-  const majorNodeEl = majorLayer.append('g').selectAll('g.gnode').data(majorNodes).join('g').attr('class','gnode')
-    .on('click', (e,d) => { e.stopPropagation(); svg.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity.translate(W/2-(d.x||0)*0.9, H/2-(d.y||0)*0.9).scale(0.9)); setTimeout(()=>selectNode(d,nodeEl,linkEl,nodes,links),320); })
-    .on('mouseover',(e,d)=>showGraphTooltip(e,d,nodes,links)).on('mousemove',moveGraphTooltip).on('mouseout',hideGraphTooltip);
-  majorNodeEl.append('circle').attr('r', r)
-    .attr('fill', d=>THEME_COLORS[d.theme]||'#666').attr('fill-opacity', 0.8)
-    .attr('stroke', d=>THEME_COLORS[d.theme]||'#666').attr('stroke-opacity', 0.85);
-  majorNodeEl.append('text').text(d=>d.label).attr('text-anchor','middle')
     .attr('dy', d=>r(d)+12).attr('font-size', d=>Math.max(10,Math.min(13,r(d)*0.7)));
 
   // ── Zone 5: Detail (all nodes) ──
@@ -1069,8 +1098,8 @@ function buildKnowledgeGraph(filterTheme) {
       nodeEl.attr('transform',d=>`translate(${d.x},${d.y})`);
       hubLinkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
       hubNodeEl.attr('transform',d=>`translate(${d.x},${d.y})`);
-      majorLinkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
-      majorNodeEl.attr('transform',d=>`translate(${d.x},${d.y})`);
+      updateSubthemePos();
+      subthemeNodeEl.attr('transform',d=>{ const p=subthemePos[d.id]; return p?`translate(${p.x},${p.y})`:`translate(${tp(d.theme)[0]},${tp(d.theme)[1]})`; });
     });
 
   _graphSim = sim;
@@ -1081,28 +1110,28 @@ function buildKnowledgeGraph(filterTheme) {
     return t*t*(3-2*t);
   }
 
-  // ── 10-zone continuous layer system ──────────────────────────────────────
-  // Zone  1: k < 0.13        overview only (large bubbles + big text)
+  // ── 10-zone semantic layer system ────────────────────────────────────────
+  // Zone  1: k < 0.13        overview (theme bubbles, large)
   // Zone  2: 0.13 – 0.22     overview → cluster crossfade
-  // Zone  3: 0.22 – 0.33     cluster only
-  // Zone  4: 0.33 – 0.48     cluster → hub crossfade
-  // Zone  5: 0.48 – 0.60     hub nodes (top 10/theme)
-  // Zone  6: 0.60 – 0.76     hub → major crossfade
-  // Zone  7: 0.76 – 0.80     major nodes (top 50)
-  // Zone  8: 0.80 – 0.95     major → detail crossfade
-  // Zone  9: 0.95 – 1.80     full detail, edges lightening
+  // Zone  3: 0.22 – 0.32     cluster (theme bubbles)
+  // Zone  4: 0.32 – 0.46     cluster → subtheme crossfade
+  // Zone  5: 0.46 – 0.60     subtheme (semantic sub-groups, centroid position)
+  // Zone  6: 0.60 – 0.74     subtheme → hub crossfade
+  // Zone  7: 0.74 – 0.88     hub nodes (top 10/theme concept nodes)
+  // Zone  8: 0.88 – 1.05     hub → detail crossfade
+  // Zone  9: 1.05 – 1.80     full detail, edges lightening
   // Zone 10: k ≥ 1.80        full detail, edges fully opaque
   function updateLayers(k) {
     const ovOp  = 1 - sst(k, 0.13, 0.22);
-    const clOp  = sst(k, 0.13, 0.22) * (1 - sst(k, 0.33, 0.48));
-    const hubOp = sst(k, 0.33, 0.48) * (1 - sst(k, 0.60, 0.76));
-    const majOp = sst(k, 0.60, 0.76) * (1 - sst(k, 0.80, 0.95));
-    const detOp = sst(k, 0.80, 0.95);
-    const edgeOp = 0.20 + sst(k, 0.95, 2.20) * 0.42;
+    const clOp  = sst(k, 0.13, 0.22) * (1 - sst(k, 0.32, 0.46));
+    const stOp  = sst(k, 0.32, 0.46) * (1 - sst(k, 0.60, 0.74));
+    const hubOp = sst(k, 0.60, 0.74) * (1 - sst(k, 0.88, 1.05));
+    const detOp = sst(k, 0.88, 1.05);
+    const edgeOp = 0.20 + sst(k, 1.05, 2.20) * 0.42;
     overviewLayer.style('opacity', ovOp).style('pointer-events', ovOp>0.25?'all':'none');
     clusterLayer.style('opacity', clOp).style('pointer-events', clOp>0.25?'all':'none');
+    subthemeLayer.style('opacity', stOp).style('pointer-events', stOp>0.25?'all':'none');
     hubLayer.style('opacity', hubOp).style('pointer-events', hubOp>0.25?'all':'none');
-    majorLayer.style('opacity', majOp).style('pointer-events', majOp>0.25?'all':'none');
     detailLayer.style('opacity', detOp).style('pointer-events', detOp>0.25?'all':'none');
     if (detOp > 0) linkEl.attr('stroke-opacity', edgeOp);
   }
@@ -1241,22 +1270,40 @@ function hideGraphTooltip() {
   document.getElementById('graphTooltip').style.display = 'none';
 }
 
-function searchWord(word){
-  document.getElementById('searchInput').value = word;
-  searchQuery = word.toLowerCase();
-  go(1);
-  // Show filter bar
-  document.getElementById('graphFilterWord').textContent = word;
-  document.getElementById('graphFilterBar').classList.add('visible');
-  // Switch to list tab
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+function _switchToList(){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-list').classList.add('active');
   document.querySelector('.tab-btn').classList.add('active');
+}
+function _activateSemanticSearch(displayLabel, terms) {
+  // terms: array of concept strings (already lowercase)
+  _semanticTerms = terms;
+  searchQuery = displayLabel;
+  document.getElementById('searchInput').value = displayLabel;
+  document.getElementById('graphFilterWord').textContent = displayLabel;
+  document.getElementById('graphFilterBar').classList.add('visible');
+  _switchToList();
+  go(1);
+}
+function searchWord(word){
+  // Expand with semantic_expand co-occurrence data
+  const expand = (typeof WR_GRAPH!=='undefined' ? WR_GRAPH.semantic_expand||{} : {});
+  const related = expand[word] || [];
+  const allTerms = [word, ...related].map(t=>t.toLowerCase());
+  _activateSemanticSearch(word, allTerms);
+}
+function searchSubtheme(d){
+  // d = {name, theme, children:[concept ids]}
+  const expand = (typeof WR_GRAPH!=='undefined' ? WR_GRAPH.semantic_expand||{} : {});
+  const allTerms = new Set(d.children.map(t=>t.toLowerCase()));
+  d.children.forEach(c=>(expand[c]||[]).forEach(e=>allTerms.add(e.toLowerCase())));
+  _activateSemanticSearch(d.name, [...allTerms]);
 }
 function clearGraphFilter(){
   document.getElementById('searchInput').value = '';
   searchQuery = '';
+  _semanticTerms = null;
   go(1);
   document.getElementById('graphFilterBar').classList.remove('visible');
 }
