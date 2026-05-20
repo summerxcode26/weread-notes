@@ -302,8 +302,8 @@ mark.notion-mark{background:rgba(255,212,0,0.3);color:inherit;outline:none;}
 .layout-btn.active{background:var(--s3);color:var(--text);border-color:var(--border2);}
 
 /* ── Knowledge Graph ── */
-.gnode circle{stroke-width:1.5px;cursor:pointer;transition:opacity 0.2s;}
-.gnode text{font-size:11px;fill:var(--text);pointer-events:none;text-shadow:0 1px 3px #0f0f13,0 0 6px #0f0f13;}
+.gnode circle{stroke-width:1.5px;cursor:pointer;transition:opacity 0.2s, stroke-width 0.15s;}
+.gnode text{font-size:11px;fill:var(--text);pointer-events:none;text-shadow:0 1px 3px #0f0f13,0 0 6px #0f0f13;transition:opacity 0.2s;}
 .glink{stroke-opacity:0.35;transition:stroke-opacity 0.2s;}
 .gnode.faded circle,.glink.faded{opacity:0.08;}
 .gnode.faded text{opacity:0.08;}
@@ -1039,9 +1039,15 @@ function buildKnowledgeGraph(filterTheme) {
   const nodeEl = detailLayer.append('g').selectAll('g.gnode')
     .data(nodes).join('g').attr('class', 'gnode')
     .call(d3.drag()
-      .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-      .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; })
-      .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+      .on('start', (e, d) => { d._dragged = false; d.fx = d.x; d.fy = d.y; })
+      .on('drag',  (e, d) => {
+        if (!d._dragged) { d._dragged = true; if (!e.active) sim.alphaTarget(0.3).restart(); }
+        d.fx = e.x; d.fy = e.y;
+      })
+      .on('end',   (e, d) => {
+        if (!e.active) sim.alphaTarget(0);
+        if (!d._dragged) { d.fx = null; d.fy = null; }
+      })
     )
     .on('click', (e, d) => { e.stopPropagation(); selectNode(d, nodeEl, linkEl, nodes, links); })
     .on('mouseover', (e, d) => showGraphTooltip(e, d, nodes, links))
