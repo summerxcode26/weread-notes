@@ -109,8 +109,8 @@ a{color:inherit;text-decoration:none;}
 
 .nc-header{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;}
 .nc-book{flex:1;min-width:0;}
-.nc-title{font-size:0.8rem;font-weight:600;color:var(--acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.nc-author{font-size:0.7rem;color:var(--note-text2);margin-top:1px;}
+.nc-title{font-size:14px;font-weight:600;color:var(--acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nc-author{font-size:13px;color:var(--note-text2);margin-top:1px;}
 .nc-meta{display:flex;align-items:center;gap:5px;flex-shrink:0;}
 .nc-date{font-size:0.68rem;color:#bbb;}
 .badge{font-size:0.62rem;padding:1px 5px;border-radius:99px;font-weight:500;}
@@ -140,16 +140,14 @@ a{color:inherit;text-decoration:none;}
   margin-top:8px;
 }
 .nc-thought::before{content:'💭 ';opacity:0.6;}
-.nc-chapter{font-size:0.68rem;color:#bbb;margin-top:5px;}
+.nc-chapter{font-size:13px;color:#bbb;margin-top:5px;}
 .nc-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
-.nc-tag{font-size:0.6rem;padding:1px 6px;border-radius:99px;}
+.nc-tag{font-size:12px;padding:2px 7px;border-radius:99px;}
 .nc-tag.k{background:rgba(63,214,140,0.12);color:var(--green);border:1px solid rgba(63,214,140,0.3);}
 .nc-tag.l{background:rgba(242,196,76,0.12);color:var(--yellow);border:1px solid rgba(242,196,76,0.3);}
 .nc-tag.r{background:rgba(242,123,63,0.12);color:var(--acc2);border:1px solid rgba(242,123,63,0.3);}
 .nc-tag.u{background:rgba(136,136,170,0.1);color:var(--t2);border:1px solid var(--border);}
-.star-display{font-size:0.7rem;color:var(--yellow);letter-spacing:-1px;}
-.truncated{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
-.expanded .truncated{display:block;}
+.star-display{font-size:13px;color:var(--yellow);letter-spacing:-1px;}
 
 /* ── Modal (similar notes) ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:center;justify-content:center;}
@@ -211,7 +209,7 @@ a{color:inherit;text-decoration:none;}
   .graph-filter-scroll .sort-btn{flex-shrink:0;}
   .similar-grid{grid-template-columns:1fr !important;}
   .modal{max-width:95vw;max-height:88vh;padding:16px;}
-  .notes-masonry{column-count:1 !important;}
+  .notes-masonry{column-count:1 !important;padding:8px;}
 }
 .card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px;}
 .card-title{font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--t2);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
@@ -275,27 +273,45 @@ a{color:inherit;text-decoration:none;}
 .empty{text-align:center;padding:60px 20px;color:var(--t2);font-size:0.85rem;background:var(--bg);}
 mark{background:rgba(255,210,0,0.22);color:var(--text);border-radius:2px;padding:0 2px;outline:1px solid rgba(255,210,0,0.35);}
 
-/* ── Masonry / Notion layout ── */
-.notes-masonry{column-count:3;column-gap:10px;padding:12px;background:var(--bg);}
-@media(max-width:900px){.notes-masonry{column-count:2;}}
+/* ── Masonry / Waterfall layout ── */
+.notes-masonry{column-count:3;column-gap:12px;padding:14px;background:var(--bg);}
+@media(max-width:1100px){.notes-masonry{column-count:2;}}
 @media(max-width:560px){.notes-masonry{column-count:1;}}
-.notion-card{break-inside:avoid;background:#fff;border-radius:8px;padding:16px 18px;margin-bottom:10px;
-  box-shadow:0 1px 2px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.06);color:#37352f;
-  font-family:ui-sans-serif,-apple-system,'PingFang SC',sans-serif;cursor:pointer;transition:box-shadow 0.15s;}
-.notion-card:hover{box-shadow:0 3px 10px rgba(0,0,0,0.1),0 0 0 1px rgba(0,0,0,0.08);}
-.notion-card .nt{font-size:0.72rem;color:#6b7280;margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.notion-card .nb{font-weight:600;color:#374151;font-size:0.8rem;}
-.notion-card .na{color:#9ca3af;font-size:0.72rem;}
-.notion-card .nx{font-size:16px;line-height:1.75;color:#1a1a1a;margin-bottom:0;white-space:pre-wrap;word-break:break-word;}
-.notion-card .nth{font-size:15px;line-height:1.7;color:#4b5563;margin-top:10px;padding:10px 12px;background:#f9fafb;border-radius:6px;white-space:pre-wrap;word-break:break-word;}
-.notion-card .ndm{font-size:0.68rem;color:#d1d5db;margin-top:8px;}
-.notion-card .nbdg{font-size:0.65rem;padding:1px 6px;border-radius:4px;font-weight:500;}
-.notion-card .nbdg.h{background:#eff6ff;color:#3b82f6;}
-.notion-card .nbdg.t{background:#fff7ed;color:#f97316;}
-.notion-card .nbdg.k{background:#f0fdf4;color:#16a34a;}
-.notion-card .nbdg.l{background:#fefce8;color:#ca8a04;}
-.notion-card .nbdg.r{background:#fff1f2;color:#e11d48;}
-mark.notion-mark{background:rgba(255,212,0,0.3);color:inherit;outline:none;}
+.notion-card{
+  break-inside:avoid;
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:18px 20px;
+  margin-bottom:12px;
+  font-family:-apple-system,'PingFang SC','Helvetica Neue',sans-serif;
+  cursor:pointer;
+  transition:box-shadow 0.15s, border-color 0.15s;
+  position:relative;
+}
+.notion-card:hover{border-color:var(--border2);box-shadow:0 4px 20px rgba(0,0,0,0.3);}
+/* Category left strip on masonry cards */
+.notion-card.mc-k{border-left:3px solid var(--green);}
+.notion-card.mc-l{border-left:3px solid var(--yellow);}
+.notion-card.mc-r{border-left:3px solid var(--acc2);}
+.notion-card .nt{font-size:13px;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.notion-card .nb{font-weight:600;color:var(--acc);font-size:13px;}
+.notion-card .na{color:var(--t3);font-size:12px;}
+/* Main text: highlight */
+.notion-card .nx{font-size:16px;line-height:1.85;color:var(--text);white-space:pre-wrap;word-break:break-word;border-left:3px solid var(--acc);padding-left:12px;}
+/* Thought / 想法 */
+.notion-card .nth{font-size:15px;line-height:1.8;color:var(--t2);margin-top:12px;padding:10px 14px;background:var(--s2);border-radius:8px;border:1px solid var(--border);white-space:pre-wrap;word-break:break-word;}
+.notion-card .nth::before{content:'💭 ';opacity:0.7;}
+/* Thought-only card (no highlight) */
+.notion-card .nth-only{font-size:16px;line-height:1.85;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+.notion-card .ndm{font-size:12px;color:var(--t3);margin-top:10px;}
+.notion-card .nbdg{font-size:11px;padding:2px 7px;border-radius:4px;font-weight:500;}
+.notion-card .nbdg.h{background:rgba(63,200,242,0.12);color:var(--acc3);border:1px solid rgba(63,200,242,0.25);}
+.notion-card .nbdg.t{background:rgba(242,123,63,0.12);color:var(--acc2);border:1px solid rgba(242,123,63,0.25);}
+.notion-card .nbdg.k{background:rgba(63,214,140,0.12);color:var(--green);border:1px solid rgba(63,214,140,0.25);}
+.notion-card .nbdg.l{background:rgba(242,196,76,0.12);color:var(--yellow);border:1px solid rgba(242,196,76,0.25);}
+.notion-card .nbdg.r{background:rgba(242,123,63,0.1);color:var(--acc2);border:1px solid rgba(242,123,63,0.2);}
+mark.notion-mark{background:rgba(255,212,0,0.25);color:inherit;outline:none;border-radius:2px;}
 .layout-btn{padding:5px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;
   color:var(--t2);font-size:0.75rem;cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap;}
 .layout-btn:hover{color:var(--text);border-color:var(--border2);}
@@ -384,8 +400,8 @@ mark.notion-mark{background:rgba(255,212,0,0.3);color:inherit;outline:none;}
       </div>
       <button class="random-btn" onclick="showRandom()">🎲 随机10条</button>
       <div style="display:flex;gap:3px;">
-        <button class="layout-btn active" id="layoutList" onclick="setLayout('list',this)" title="列表">☰</button>
-        <button class="layout-btn" id="layoutMasonry" onclick="setLayout('masonry',this)" title="瀑布流">⊞</button>
+        <button class="layout-btn" id="layoutList" onclick="setLayout('list',this)" title="列表">☰</button>
+        <button class="layout-btn active" id="layoutMasonry" onclick="setLayout('masonry',this)" title="瀑布流">⊞</button>
       </div>
       <span class="result-count" id="resultCount"></span>
     </div>
@@ -539,7 +555,7 @@ mark.notion-mark{background:rgba(255,212,0,0.3);color:inherit;outline:none;}
 const PAGE_SIZE = 40;
 let filteredNotes = [], currentPage = 1;
 let searchQuery='', filterType='all', filterYear='', filterTheme='';
-let layoutMode='list';
+let layoutMode='masonry';
 let filterBook='', filterAuthor='', filterCat='';
 let sortOrder='new';
 let searchTimer=null;
@@ -689,11 +705,11 @@ function noteHTML(n, q=''){
   const stars=n.st?'★'.repeat(Math.round(n.st/20))+'☆'.repeat(5-Math.round(n.st/20)):'';
   const ch=n.ch?`<div class="nc-chapter">§ ${esc(n.ch)}</div>`:'';
   const tags=n.tg?`<div class="nc-tags">${n.tg.map(t=>`<span class="nc-tag ${n.cat||'u'}">${WR_THEME_LABELS[t]||t}</span>`).join('')}</div>`:'';
-  const hlText=n.tx?`<div class="nc-highlight truncated">${hl(n.tx,q)}</div>`:'';
-  const thText=n.th?`<div class="nc-thought truncated">${hl(n.th,q)}</div>`:'';
+  const hlText=n.tx?`<div class="nc-highlight">${hl(n.tx,q)}</div>`:'';
+  const thText=n.th?`<div class="nc-thought">${hl(n.th,q)}</div>`:'';
   const starD=stars?`<span class="star-display">${stars}</span>`:'';
   const catCls=n.cat?`cat-${n.cat}`:'';
-  return `<div class="note-card ${catCls}" onclick="this.classList.toggle('expanded')">
+  return `<div class="note-card ${catCls}">
     <div class="nc-header">
       <div class="nc-book">
         <div class="nc-title" title="${esc(n.bk)}">${hl(n.bk,q)}</div>
@@ -716,13 +732,15 @@ function notionCard(n, q=''){
   const bdgCls=n.br?'t':isT?'t':'h';
   const bdgTxt=n.br?'书评':isT?'想法':'划线';
   const catTxt={k:'知识',l:'文学',r:'感悟',u:''}[n.cat||'u']||'';
+  const catCls=n.cat?`mc-${n.cat}`:'';
+  // If thought-only (no highlight text), render thought as primary text
   const tx=n.tx?`<div class="nx">${hlNotion(n.tx,q)}</div>`:'';
-  const th=n.th?`<div class="nth">${hlNotion(n.th,q)}</div>`:'';
+  const th=n.th?(n.tx?`<div class="nth">${hlNotion(n.th,q)}</div>`:`<div class="nth-only">${hlNotion(n.th,q)}</div>`):'';
   const badges=[
     `<span class="nbdg ${bdgCls}">${bdgTxt}</span>`,
     catTxt?`<span class="nbdg ${n.cat}">${catTxt}</span>`:'',
   ].filter(Boolean).join('');
-  return `<div class="notion-card">
+  return `<div class="notion-card ${catCls}">
     <div class="nt">
       <span class="nb">${hlNotion(n.bk,q)}</span>
       <span class="na">${hlNotion(n.au||'',q)}</span>
@@ -763,7 +781,7 @@ function renderPagination(){
   html+=`<button class="page-btn" onclick="go(${currentPage+1})" ${currentPage===total?'disabled':''}>›</button>`;
   html+=`<span class="page-info">${currentPage}/${total} 页 · ${filteredNotes.length}条</span>`;
   pg.innerHTML=html;
-  document.querySelector('.notes-list').scrollTop=0;
+  const nl=document.getElementById('notesList'); if(nl)nl.scrollTop=0;
 }
 function getPages(cur,total){
   if(total<=7)return Array.from({length:total},(_,i)=>i+1);
