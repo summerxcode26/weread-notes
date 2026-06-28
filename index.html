@@ -94,12 +94,12 @@ a{color:inherit;text-decoration:none;}
 .note-card{
   background:var(--note-bg);
   border-bottom:1px solid var(--note-border);
-  padding:16px 18px;
+  padding:20px 20px 18px;
   cursor:pointer;
-  transition:box-shadow 0.15s;
+  transition:background 0.15s;
   position:relative;
 }
-.note-card:hover{box-shadow:inset 3px 0 0 var(--acc);}
+.note-card:hover{background:var(--s3);}
 .note-card.expanded .nc-body{max-height:none;}
 
 /* Category indicator strip */
@@ -109,8 +109,8 @@ a{color:inherit;text-decoration:none;}
 
 .nc-header{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;}
 .nc-book{flex:1;min-width:0;}
-.nc-title{font-size:14px;font-weight:600;color:var(--acc);word-break:break-word;}
-.nc-author{font-size:13px;color:var(--note-text2);margin-top:1px;}
+.nc-title{font-size:18px;font-weight:700;color:var(--acc);word-break:break-word;line-height:1.35;}
+.nc-author{font-size:15px;color:var(--note-text2);margin-top:3px;}
 .nc-meta{display:flex;align-items:center;gap:5px;flex-shrink:0;}
 .nc-date{font-size:0.68rem;color:#bbb;}
 .badge{font-size:0.62rem;padding:1px 5px;border-radius:99px;font-weight:500;}
@@ -120,24 +120,24 @@ a{color:inherit;text-decoration:none;}
 
 /* Highlight text */
 .nc-highlight{
-  font-size:16px;
-  line-height:1.8;
+  font-size:18px;
+  line-height:1.85;
   color:var(--note-text);
   background:transparent;
   border-left:3px solid var(--note-hl-bar);
-  padding:4px 0 4px 12px;
-  margin-top:2px;
+  padding:6px 0 6px 14px;
+  margin-top:8px;
 }
 /* Thought text */
 .nc-thought{
   font-size:16px;
-  line-height:1.75;
+  line-height:1.8;
   color:var(--note-text2);
   background:var(--note-thought-bg);
   border:1px solid var(--border);
-  border-radius:6px;
-  padding:10px 12px;
-  margin-top:8px;
+  border-radius:8px;
+  padding:12px 14px;
+  margin-top:10px;
 }
 .nc-thought::before{content:'💭 ';opacity:0.6;}
 .nc-chapter{font-size:13px;color:#bbb;margin-top:5px;}
@@ -384,8 +384,7 @@ function pwCheck(){
     <div class="hdr-stats">
       <span>📚 <strong id="totalBooks">—</strong> 本</span>
       <span>✏️ <strong id="totalNotes">—</strong> 条</span>
-      <span class="sync-status" id="syncStatus">上次同步: 今日</span>
-      <button class="sync-btn" id="syncBtn" onclick="syncData()">↻ 同步更新</button>
+      <span class="sync-status" id="syncStatus"></span>
     </div>
   </div>
   <div class="tab-nav">
@@ -449,10 +448,6 @@ function pwCheck(){
         <button class="sort-btn" data-sort="lk" onclick="setSort('lk',this)">点赞↓</button>
       </div>
       <button class="random-btn" onclick="showRandom()">🎲 随机10条</button>
-      <div style="display:flex;gap:3px;">
-        <button class="layout-btn" id="layoutList" onclick="setLayout('list',this)" title="列表">☰</button>
-        <button class="layout-btn active" id="layoutMasonry" onclick="setLayout('masonry',this)" title="瀑布流">⊞</button>
-      </div>
       <span class="result-count" id="resultCount"></span>
     </div>
     <div class="graph-filter-bar" id="graphFilterBar">
@@ -605,7 +600,7 @@ function pwCheck(){
 const PAGE_SIZE = 40;
 let filteredNotes = [], currentPage = 1;
 let searchQuery='', filterType='all', filterYear='', filterTheme='';
-let layoutMode='masonry';
+let layoutMode='list';
 let filterBook='', filterAuthor='', filterCat='';
 let sortOrder='new';
 let searchTimer=null;
@@ -622,6 +617,9 @@ const CAT_LABEL={'k':'知识','l':'文学','r':'感悟','u':'其他'};
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('totalNotes').textContent = WR_NOTES.length.toLocaleString();
   document.getElementById('totalBooks').textContent = WR_BOOKS.length.toLocaleString();
+  // Show data generation date from the comment at top of data.js (injected as const)
+  const syncEl=document.getElementById('syncStatus');
+  if(syncEl && typeof WR_DATA_DATE !== 'undefined') syncEl.textContent='数据: '+WR_DATA_DATE;
   buildYearPills(); buildThemePills(); buildBookSelect(); buildAuthorSelect();
   applyFilters();
 });

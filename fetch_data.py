@@ -317,6 +317,7 @@ def generate_data_js(compact_notes: list, books_raw: list, reviews: list):
 
     lines = [
         f"// Auto-generated {today}",
+        f"window.WR_DATA_DATE='{today}';",
         f"window.WR_NOTES={json.dumps(compact_notes, ensure_ascii=False, separators=(',',':'))};",
         f"window.WR_BOOKS={json.dumps(wr_books, ensure_ascii=False, separators=(',',':'))};",
         f"window.WR_AUTHORS={json.dumps(wr_authors, ensure_ascii=False, separators=(',',':'))};",
