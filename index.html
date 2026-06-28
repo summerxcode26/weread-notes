@@ -109,7 +109,7 @@ a{color:inherit;text-decoration:none;}
 
 .nc-header{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;}
 .nc-book{flex:1;min-width:0;}
-.nc-title{font-size:14px;font-weight:600;color:var(--acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nc-title{font-size:14px;font-weight:600;color:var(--acc);word-break:break-word;}
 .nc-author{font-size:13px;color:var(--note-text2);margin-top:1px;}
 .nc-meta{display:flex;align-items:center;gap:5px;flex-shrink:0;}
 .nc-date{font-size:0.68rem;color:#bbb;}
@@ -197,7 +197,7 @@ a{color:inherit;text-decoration:none;}
   .result-count{display:none;}
   .random-btn{padding:5px 8px;font-size:0.7rem;}
   .note-card{padding:12px 14px;}
-  .nc-highlight,.nc-thought{font-size:15px;}
+  .nc-highlight,.nc-thought{font-size:16px;}
   .pagination{padding:8px 6px;gap:3px;overflow-x:auto;flex-wrap:nowrap;}
   .page-btn{padding:6px 10px;min-width:34px;touch-action:manipulation;flex-shrink:0;}
   .insights-layout{padding:14px 10px;}
@@ -242,11 +242,15 @@ a{color:inherit;text-decoration:none;}
 .tc-book{font-size:0.72rem;color:var(--acc);margin-bottom:3px;}
 .tc-abstract{font-size:0.76rem;color:var(--t2);border-left:2px solid var(--border2);padding-left:7px;margin-bottom:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .tc-thought{font-size:0.8rem;color:var(--text);line-height:1.6;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.thought-card{cursor:pointer;}
+.thought-card.expanded .tc-abstract,.thought-card.expanded .tc-thought{display:block;overflow:visible;-webkit-line-clamp:unset;}
 .tc-meta{font-size:0.68rem;color:var(--t3);margin-top:5px;}
 .review-card{padding:12px;background:var(--s2);border-radius:8px;margin-bottom:8px;border:1px solid var(--border);}
 .rc-stars{font-size:0.78rem;color:var(--yellow);margin-bottom:3px;}
 .rc-book{font-size:0.8rem;font-weight:600;color:var(--acc);}
 .rc-thought{font-size:0.8rem;color:var(--text);line-height:1.6;margin-top:5px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+.review-card{cursor:pointer;}
+.review-card.expanded .rc-thought{display:block;overflow:visible;-webkit-line-clamp:unset;}
 .rc-date{font-size:0.68rem;color:var(--t3);margin-top:4px;}
 
 /* Similar notes */
@@ -256,6 +260,7 @@ a{color:inherit;text-decoration:none;}
 .sim-card:hover{box-shadow:0 0 0 2px var(--acc);}
 .sim-card-book{font-size:0.72rem;color:var(--acc);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sim-card-text{font-size:14px;line-height:1.7;color:var(--note-text);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.sim-card.expanded .sim-card-text{display:block;overflow:visible;-webkit-line-clamp:unset;}
 .sim-card-meta{font-size:0.65rem;color:#bbb;margin-top:5px;}
 
 /* Category legend */
@@ -274,9 +279,9 @@ a{color:inherit;text-decoration:none;}
 mark{background:rgba(255,210,0,0.22);color:var(--text);border-radius:2px;padding:0 2px;outline:1px solid rgba(255,210,0,0.35);}
 
 /* ── Masonry / Waterfall layout ── */
-.notes-masonry{column-count:3;column-gap:12px;padding:14px;background:var(--bg);}
+.notes-masonry{column-count:3;column-gap:12px;padding:14px;background:var(--bg);flex:1;overflow-y:auto;min-height:0;}
 @media(max-width:1100px){.notes-masonry{column-count:2;}}
-@media(max-width:560px){.notes-masonry{column-count:1;}}
+@media(max-width:768px){.notes-masonry{column-count:1;}}
 .notion-card{
   break-inside:avoid;
   background:var(--s1);
@@ -294,17 +299,17 @@ mark{background:rgba(255,210,0,0.22);color:var(--text);border-radius:2px;padding
 .notion-card.mc-k{border-left:3px solid var(--green);}
 .notion-card.mc-l{border-left:3px solid var(--yellow);}
 .notion-card.mc-r{border-left:3px solid var(--acc2);}
-.notion-card .nt{font-size:13px;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.notion-card .nb{font-weight:600;color:var(--acc);font-size:13px;}
-.notion-card .na{color:var(--t3);font-size:12px;}
+.notion-card .nt{font-size:14px;color:var(--t2);margin-bottom:10px;display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;}
+.notion-card .nb{font-weight:700;color:var(--acc);font-size:18px;line-height:1.4;}
+.notion-card .na{color:var(--t3);font-size:16px;}
 /* Main text: highlight */
 .notion-card .nx{font-size:16px;line-height:1.85;color:var(--text);white-space:pre-wrap;word-break:break-word;border-left:3px solid var(--acc);padding-left:12px;}
 /* Thought / 想法 */
-.notion-card .nth{font-size:15px;line-height:1.8;color:var(--t2);margin-top:12px;padding:10px 14px;background:var(--s2);border-radius:8px;border:1px solid var(--border);white-space:pre-wrap;word-break:break-word;}
+.notion-card .nth{font-size:16px;line-height:1.85;color:var(--t2);margin-top:12px;padding:10px 14px;background:var(--s2);border-radius:8px;border:1px solid var(--border);white-space:pre-wrap;word-break:break-word;}
 .notion-card .nth::before{content:'💭 ';opacity:0.7;}
 /* Thought-only card (no highlight) */
 .notion-card .nth-only{font-size:16px;line-height:1.85;color:var(--text);white-space:pre-wrap;word-break:break-word;}
-.notion-card .ndm{font-size:12px;color:var(--t3);margin-top:10px;}
+.notion-card .ndm{font-size:14px;color:var(--t3);margin-top:10px;}
 .notion-card .nbdg{font-size:11px;padding:2px 7px;border-radius:4px;font-weight:500;}
 .notion-card .nbdg.h{background:rgba(63,200,242,0.12);color:var(--acc3);border:1px solid rgba(63,200,242,0.25);}
 .notion-card .nbdg.t{background:rgba(242,123,63,0.12);color:var(--acc2);border:1px solid rgba(242,123,63,0.25);}
@@ -324,9 +329,54 @@ mark.notion-mark{background:rgba(255,212,0,0.25);color:inherit;outline:none;bord
 .gnode.faded circle,.glink.faded{opacity:0.08;}
 .gnode.faded text{opacity:0.08;}
 .gnode.highlighted circle{stroke-width:3px;}
+/* ── Password Gate ── */
+#pw-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#1a1040 0%,#0d0d14 70%);}
+#pw-gate.hidden{display:none;}
+.pw-box{background:#1a1a24;border:1px solid #3a3a52;border-radius:16px;padding:40px 36px 32px;width:min(380px,92vw);text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.6);}
+.pw-icon{font-size:2.4rem;margin-bottom:14px;}
+.pw-title{font-size:1.15rem;font-weight:700;color:#e8e8f0;margin-bottom:6px;}
+.pw-sub{font-size:0.82rem;color:#666688;margin-bottom:24px;}
+.pw-input{width:100%;background:#0f0f18;border:1px solid #3a3a52;border-radius:10px;padding:12px 16px;color:#e8e8f0;font-size:1.05rem;font-family:inherit;outline:none;text-align:center;letter-spacing:2px;transition:border-color 0.2s;}
+.pw-input:focus{border-color:#7c6af7;}
+.pw-input.shake{animation:shake 0.35s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.pw-btn{margin-top:16px;width:100%;padding:12px;background:linear-gradient(135deg,#7c6af7,#5a4ed4);border:none;border-radius:10px;color:#fff;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity 0.2s;}
+.pw-btn:hover{opacity:0.88;}
+.pw-err{margin-top:12px;font-size:0.82rem;color:#f2564f;min-height:18px;}
 </style>
 </head>
 <body>
+<div id="pw-gate">
+  <div class="pw-box">
+    <div class="pw-icon">📝</div>
+    <div class="pw-title">我的微信读书笔记</div>
+    <div class="pw-sub">请输入访问密码</div>
+    <input id="pw-input" class="pw-input" type="password" placeholder="••••••••" autocomplete="current-password" />
+    <button class="pw-btn" onclick="pwCheck()">进入</button>
+    <div class="pw-err" id="pw-err"></div>
+  </div>
+</div>
+<script>
+(function(){
+  const KEY='wr_auth_v1', OK=btoa('notes26'+'_wr');
+  if(localStorage.getItem(KEY)===OK) document.getElementById('pw-gate').classList.add('hidden');
+  document.getElementById('pw-input').addEventListener('keydown',e=>{if(e.key==='Enter')pwCheck();});
+})();
+function pwCheck(){
+  const inp=document.getElementById('pw-input');
+  const OK=btoa('notes26'+'_wr');
+  if(btoa(inp.value+'_wr')===OK){
+    localStorage.setItem('wr_auth_v1',OK);
+    document.getElementById('pw-gate').classList.add('hidden');
+  } else {
+    inp.classList.remove('shake');
+    void inp.offsetWidth;
+    inp.classList.add('shake');
+    document.getElementById('pw-err').textContent='密码错误，请重试';
+    inp.value='';inp.focus();
+  }
+}
+</script>
 
 <div class="header">
   <div class="header-top">
@@ -813,23 +863,42 @@ async function syncData(){
   const btn=document.getElementById('syncBtn');
   const status=document.getElementById('syncStatus');
   btn.textContent='同步中…';btn.classList.add('syncing');
+  let pollTimer=null;
+  const stopPoll=()=>{if(pollTimer){clearInterval(pollTimer);pollTimer=null;}};
+  const resetBtn=()=>{btn.textContent='↻ 同步更新';btn.classList.remove('syncing');};
   try{
     const r=await fetch('/api/refresh');
     const d=r.ok ? await r.json() : null;
-    btn.textContent='↻ 同步更新';btn.classList.remove('syncing');
     if(!r.ok||!d){
-      status.textContent='同步失败';
-    }else if(d.status==='running'){
-      status.textContent=d.message||'同步中，请稍候后手动刷新';
-    }else if(d.updated){
-      status.textContent=d.message||'同步完成';
-      setTimeout(()=>location.reload(),800);
-    }else{
-      status.textContent='已是最新';
+      resetBtn();status.textContent='同步失败';return;
     }
+    if(d.updated){
+      resetBtn();status.textContent='同步完成，正在刷新…';
+      setTimeout(()=>location.reload(),800);return;
+    }
+    // running — poll status until done
+    let startDone=d.doneAt||0;
+    let tries=0;
+    status.textContent='同步中…';
+    pollTimer=setInterval(async()=>{
+      tries++;
+      if(tries>60){stopPoll();resetBtn();status.textContent='同步超时，请手动刷新';return;}
+      try{
+        const ps=await fetch('/api/refresh/status');
+        if(!ps.ok){return;}
+        const pd=await ps.json();
+        if(!pd.running && pd.doneAt>startDone){
+          stopPoll();resetBtn();
+          status.textContent='同步完成，正在刷新…';
+          setTimeout(()=>location.reload(),600);
+        } else {
+          const elapsed=Math.round(tries*3);
+          status.textContent=`同步中… ${elapsed}s`;
+        }
+      }catch(_){}
+    },3000);
   }catch(e){
-    btn.textContent='↻ 同步更新';btn.classList.remove('syncing');
-    status.textContent='请先启动 server.py';
+    stopPoll();resetBtn();status.textContent='请先启动 server.py';
   }
 }
 
@@ -1359,10 +1428,10 @@ function buildSimilarNotes(){
         # ${cl.label} · ${cl.notes.length} 条来自不同书的相似笔记
       </div>
       <div class="similar-grid">
-        ${cl.notes.map(n=>`<div class="sim-card cat-${n.cat||'u'}" onclick="jumpToNote(${n.id})">
+        ${cl.notes.map(n=>`<div class="sim-card cat-${n.cat||'u'}" onclick="this.classList.toggle('expanded')" title="点击展开/收起">
           <div class="sim-card-book">📖 ${esc(n.bk.slice(0,22))}</div>
-          <div class="sim-card-text">${esc(n.tx.slice(0,120))}</div>
-          <div class="sim-card-meta">${n.dt} · ${CAT_LABEL[n.cat||'u']}</div>
+          <div class="sim-card-text">${esc(n.tx)}</div>
+          <div class="sim-card-meta">${n.dt} · ${CAT_LABEL[n.cat||'u']} · <span onclick="event.stopPropagation();jumpToNote(${n.id})" style="color:var(--acc);cursor:pointer;">查看原书 →</span></div>
         </div>`).join('')}
       </div>
     </div>`).join('');
@@ -1383,7 +1452,7 @@ function buildTopThoughts(){
   const c=document.getElementById('topThoughtsInsight');
   c.innerHTML=WR_TOP_THOUGHTS.slice(0,12).map(t=>{
     const abs=t.tx?`<div class="tc-abstract">${esc(t.tx.slice(0,80))}…</div>`:'';
-    return `<div class="thought-card">
+    return `<div class="thought-card" onclick="this.classList.toggle('expanded')" title="点击展开/收起">
       <div class="tc-book">📖 ${esc(t.bk)} <span style="color:var(--t3);font-size:0.68rem">· ${t.ln}字</span></div>
       ${abs}<div class="tc-thought">${esc(t.th)}</div>
       <div class="tc-meta">${t.dt}</div>
@@ -1394,7 +1463,7 @@ function buildReviews(){
   const c=document.getElementById('reviewsInsight');
   c.innerHTML=WR_REVIEWS.filter(r=>r.st>=100).map(r=>{
     const stars='★'.repeat(Math.round(r.st/20));
-    return `<div class="review-card">
+    return `<div class="review-card" onclick="this.classList.toggle('expanded')" title="点击展开/收起">
       <div class="rc-stars">${stars}</div>
       <div class="rc-book">${esc(r.bk)}</div>
       <div style="font-size:0.7rem;color:var(--t2)">${esc(r.au||'')}</div>
