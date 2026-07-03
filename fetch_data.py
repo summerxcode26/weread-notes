@@ -100,6 +100,7 @@ def fetch_book_notes(book_entry):
     title = book.get("title", "")
     author = book.get("author", "")
     notes = []
+    highlight_by_key = {}  # (chapterUid, range) -> highlight note, for merging attached comments
 
     # Highlights
     try:
@@ -108,7 +109,7 @@ def fetch_book_notes(book_entry):
             text = item.get("markText", "").strip()
             if not text:
                 continue
-            notes.append({
+            note = {
                 "id": item.get("bookmarkId", 0),
                 "type": "highlight",
                 "bookId": book_id,
@@ -119,33 +120,57 @@ def fetch_book_notes(book_entry):
                 "chapterTitle": item.get("chapterTitle", ""),
                 "createTime": item.get("createTime", 0),
                 "likeCount": item.get("likeCount", 0),
-            })
+            }
+            notes.append(note)
+            rng = item.get("range")
+            if rng:
+                highlight_by_key[(item.get("chapterUid"), rng)] = note
         time.sleep(0.08)
     except Exception as e:
         print(f"  [warn] highlights {book_id}: {e}")
 
-    # Thoughts / reviews
+    # Thoughts / comments / book reviews. Endpoint quirk: this is the one
+    # api_name that takes lowercase "bookid" (not "bookId"); the wrong case
+    # gets a 499 and silently yields zero reviews.
     try:
-        res = api_call({"api_name": "/review/list/mine", "bookId": book_id, "listType": 11, "count": 100})
-        for item in res.get("reviews", []):
-            rv = item.get("review", {})
-            text = rv.get("abstract", "").strip()
-            thought = rv.get("content", "").strip()
-            chapter = rv.get("chapterTitle", "")
-            if not thought and not text:
-                continue
-            notes.append({
-                "id": rv.get("reviewId", rv.get("createTime", 0)),
-                "type": "thought",
-                "bookId": book_id,
-                "title": title,
-                "author": author,
-                "text": text,
-                "thought": thought,
-                "chapterTitle": chapter,
-                "createTime": rv.get("createTime", 0),
-                "likeCount": rv.get("likeCount", 0),
-            })
+        synckey = 0
+        for _ in range(50):  # hard cap against a runaway pagination loop
+            res = api_call({"api_name": "/review/list/mine", "bookid": book_id, "synckey": synckey, "count": 100})
+            reviews = res.get("reviews", [])
+            for item in reviews:
+                rv = item.get("review", {})
+                content = rv.get("content", "").strip()
+                if not content:
+                    continue
+                abstract = rv.get("abstract", "").strip()
+                rng = rv.get("range")
+                key = (rv.get("chapterUid"), rng) if rng else None
+                target = highlight_by_key.get(key) if key else None
+                if target is not None:
+                    # 划线想法: fold the comment into its highlight instead of a duplicate card
+                    target["thought"] = content
+                    continue
+                star = rv.get("star", 0)
+                notes.append({
+                    "id": rv.get("reviewId", rv.get("createTime", 0)),
+                    "type": "thought",
+                    "bookId": book_id,
+                    "title": title,
+                    "author": author,
+                    "text": abstract,
+                    "thought": content,
+                    "chapterTitle": rv.get("chapterName", ""),
+                    "createTime": rv.get("createTime", 0),
+                    "likeCount": rv.get("likeCount", 0),
+                    "isReview": rv.get("type") == 4,
+                    "star": star if star and star > 0 else 0,
+                })
+            if not res.get("hasMore") or not reviews:
+                break
+            synckey = res.get("synckey", 0)
+            if not synckey:
+                break
+            time.sleep(0.08)
         time.sleep(0.08)
     except Exception as e:
         print(f"  [warn] thoughts {book_id}: {e}")
@@ -242,6 +267,11 @@ def compact_note(n: dict, cat: str, themes: list) -> dict:
     lk = n.get("likeCount", 0)
     if lk:
         c["lk"] = lk
+    if n.get("isReview"):
+        c["br"] = 1
+    st = n.get("star", 0)
+    if st:
+        c["st"] = st
     return c
 
 

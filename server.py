@@ -26,6 +26,7 @@ def _check_cookie(headers) -> bool:
 
 _refresh_lock = threading.Lock()
 _refresh_running = False
+_refresh_done_at: float = 0.0   # epoch of last completed refresh
 
 LOGIN_HTML = """<!DOCTYPE html>
 <html lang="zh-CN">
@@ -106,6 +107,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if self.path == "/api/refresh":
             self._handle_refresh()
+        elif self.path == "/api/refresh/status":
+            self._handle_refresh_status()
         else:
             super().do_GET()
 
@@ -139,11 +142,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             _refresh_running = True
 
         def run():
-            global _refresh_running
+            global _refresh_running, _refresh_done_at
             try:
                 import fetch_data
                 count = fetch_data.run()
                 print(f"[refresh] done — {count} notes")
+                import time as _time
+                _refresh_done_at = _time.time()
             except Exception as e:
                 print(f"[refresh] error: {e}")
             finally:
@@ -156,6 +161,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._json({"status": "running", "updated": False, "message": "同步中，完成后请手动刷新页面"})
         else:
             self._json({"status": "ok", "updated": True, "message": "同步完成，正在刷新..."})
+
+    def _handle_refresh_status(self):
+        self._json({"running": _refresh_running, "doneAt": _refresh_done_at})
 
     def _json(self, data):
         body = json.dumps(data, ensure_ascii=False).encode()

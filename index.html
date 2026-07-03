@@ -385,6 +385,7 @@ function pwCheck(){
       <span>📚 <strong id="totalBooks">—</strong> 本</span>
       <span>✏️ <strong id="totalNotes">—</strong> 条</span>
       <button class="random-btn" onclick="showRandom()">🎲 随机一读</button>
+      <button class="sync-btn" id="syncBtn" onclick="syncData()">↻ 同步更新</button>
       <span class="sync-status" id="syncStatus"></span>
     </div>
   </div>
@@ -841,18 +842,42 @@ function getPages(cur,total){
 // ════════════════════════════════════════
 // Random 10
 // ════════════════════════════════════════
-function showRandom(){
-  const pool=filteredNotes.length>0?filteredNotes:WR_NOTES;
-  const picked=[];const used=new Set();
-  while(picked.length<Math.min(10,pool.length)){
-    const i=Math.floor(Math.random()*pool.length);
-    if(!used.has(i)){used.add(i);picked.push(pool[i]);}
+let _randomPool=[];let _randomUsed=new Set();let _randomShown=[];
+function _pickRandom(n){
+  const picked=[];
+  const avail=_randomPool.length-_randomUsed.size;
+  const take=Math.min(n,avail);
+  while(picked.length<take){
+    const i=Math.floor(Math.random()*_randomPool.length);
+    if(!_randomUsed.has(i)){_randomUsed.add(i);picked.push(_randomPool[i]);}
   }
-  document.getElementById('modalTitle').textContent=`🎲 随机 ${picked.length} 条笔记`;
-  document.getElementById('modalBody').innerHTML=picked.map(n=>noteHTML(n)).join('');
+  return picked;
+}
+function showRandom(){
+  _randomPool=filteredNotes.length>0?filteredNotes:WR_NOTES;
+  _randomUsed=new Set();
+  _randomShown=_pickRandom(10);
+  document.getElementById('modalTitle').textContent=`🎲 随机 ${_randomShown.length} 条笔记`;
+  _renderRandomModal();
   document.getElementById('modalOverlay').style.display='flex';
 }
+function loadMoreRandom(){
+  const more=_pickRandom(10);
+  _randomShown=_randomShown.concat(more);
+  document.getElementById('modalTitle').textContent=`🎲 随机 ${_randomShown.length} 条笔记`;
+  _renderRandomModal();
+}
+function _renderRandomModal(){
+  const hasMore=_randomUsed.size<_randomPool.length;
+  const moreBtn=hasMore
+    ?`<button class="random-btn" style="width:100%;margin-top:12px" onclick="loadMoreRandom()">🎲 再来 10 条</button>`
+    :`<div class="empty" style="padding:12px 0;font-size:0.8rem">已经是全部笔记啦～</div>`;
+  document.getElementById('modalBody').innerHTML=_randomShown.map(n=>noteHTML(n)).join('')+moreBtn;
+}
 function closeModal(){document.getElementById('modalOverlay').style.display='none';}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.getElementById('modalOverlay').style.display!=='none')closeModal();
+});
 
 // ════════════════════════════════════════
 // Sync / Auto-update
