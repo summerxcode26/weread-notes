@@ -1,3 +1,7 @@
 .DS_Store
 __pycache__/
 *.pyc
+auto_update.log
+.last_run_date
+launchd.out.log
+launchd.err.log

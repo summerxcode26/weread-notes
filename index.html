@@ -26,9 +26,6 @@ a{color:inherit;text-decoration:none;}
 .hdr-stats{font-size:0.75rem;color:var(--t2);margin-left:auto;display:flex;gap:14px;align-items:center;}
 .back-link{font-size:0.78rem;color:var(--t2);display:flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;transition:all 0.2s;}
 .back-link:hover{color:var(--text);border-color:var(--border2);}
-.sync-btn{font-size:0.75rem;padding:4px 12px;background:rgba(124,106,247,0.12);border:1px solid rgba(124,106,247,0.3);border-radius:6px;color:var(--acc);cursor:pointer;font-family:inherit;transition:all 0.2s;}
-.sync-btn:hover{background:rgba(124,106,247,0.22);}
-.sync-btn.syncing{opacity:0.6;pointer-events:none;}
 .sync-status{font-size:0.72rem;color:var(--t3);}
 
 .tab-nav{display:flex;gap:2px;}
@@ -180,7 +177,6 @@ a{color:inherit;text-decoration:none;}
   .hdr-stats{gap:6px;flex-wrap:wrap;justify-content:flex-end;}
   .hdr-stats>span{font-size:0.7rem;}
   .sync-status{display:none;}
-  .sync-btn{font-size:0.7rem;padding:3px 8px;}
   .tab-nav{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .tab-nav::-webkit-scrollbar{display:none;}
   .tab-btn{padding:8px 16px;font-size:0.82rem;white-space:nowrap;flex-shrink:0;}
@@ -385,7 +381,6 @@ function pwCheck(){
       <span>📚 <strong id="totalBooks">—</strong> 本</span>
       <span>✏️ <strong id="totalNotes">—</strong> 条</span>
       <button class="random-btn" onclick="showRandom()">🎲 随机一读</button>
-      <button class="sync-btn" id="syncBtn" onclick="syncData()">↻ 同步更新</button>
       <span class="sync-status" id="syncStatus"></span>
     </div>
   </div>
@@ -620,7 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('totalBooks').textContent = WR_BOOKS.length.toLocaleString();
   // Show data generation date from the comment at top of data.js (injected as const)
   const syncEl=document.getElementById('syncStatus');
-  if(syncEl && typeof WR_DATA_DATE !== 'undefined') syncEl.textContent='数据: '+WR_DATA_DATE;
+  if(syncEl && typeof WR_DATA_DATE !== 'undefined') syncEl.textContent='最后更新: '+WR_DATA_DATE;
   buildYearPills(); buildThemePills(); buildBookSelect(); buildAuthorSelect();
   applyFilters();
 });
@@ -880,50 +875,12 @@ document.addEventListener('keydown',e=>{
 });
 
 // ════════════════════════════════════════
-// Sync / Auto-update
+// Sync status is shown as a static "最后更新: <date>" label
+// (populated in the DOMContentLoaded handler above from WR_DATA_DATE).
+// Actual data refresh happens out-of-band via GitHub Actions
+// (.github/workflows/update-notes.yml), since this page is a static
+// GitHub Pages deploy with no backend to call.
 // ════════════════════════════════════════
-async function syncData(){
-  const btn=document.getElementById('syncBtn');
-  const status=document.getElementById('syncStatus');
-  btn.textContent='同步中…';btn.classList.add('syncing');
-  let pollTimer=null;
-  const stopPoll=()=>{if(pollTimer){clearInterval(pollTimer);pollTimer=null;}};
-  const resetBtn=()=>{btn.textContent='↻ 同步更新';btn.classList.remove('syncing');};
-  try{
-    const r=await fetch('/api/refresh');
-    const d=r.ok ? await r.json() : null;
-    if(!r.ok||!d){
-      resetBtn();status.textContent='同步失败';return;
-    }
-    if(d.updated){
-      resetBtn();status.textContent='同步完成，正在刷新…';
-      setTimeout(()=>location.reload(),800);return;
-    }
-    // running — poll status until done
-    let startDone=d.doneAt||0;
-    let tries=0;
-    status.textContent='同步中…';
-    pollTimer=setInterval(async()=>{
-      tries++;
-      if(tries>60){stopPoll();resetBtn();status.textContent='同步超时，请手动刷新';return;}
-      try{
-        const ps=await fetch('/api/refresh/status');
-        if(!ps.ok){return;}
-        const pd=await ps.json();
-        if(!pd.running && pd.doneAt>startDone){
-          stopPoll();resetBtn();
-          status.textContent='同步完成，正在刷新…';
-          setTimeout(()=>location.reload(),600);
-        } else {
-          const elapsed=Math.round(tries*3);
-          status.textContent=`同步中… ${elapsed}s`;
-        }
-      }catch(_){}
-    },3000);
-  }catch(e){
-    stopPoll();resetBtn();status.textContent='请先启动 server.py';
-  }
-}
 
 // ════════════════════════════════════════
 // Insights
