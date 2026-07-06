@@ -24,8 +24,22 @@ fi
   if ! git diff --quiet -- data.js; then
     git add data.js
     git commit -m "自动同步笔记数据 $(date '+%Y-%m-%d')"
-    git push origin main
-    echo "Pushed update."
+    # Right after boot/wake, the login keychain can still be mid-unlock,
+    # which makes the osxkeychain credential helper fail non-interactively.
+    # Retry a few times before giving up (marker stays stale on failure,
+    # so the next boot/wake retries the whole thing).
+    ok=0
+    for i in 1 2 3 4 5; do
+      if git push origin main; then ok=1; break; fi
+      echo "  push attempt $i failed, retrying in 20s..."
+      sleep 20
+    done
+    if [ "$ok" = "1" ]; then
+      echo "Pushed update."
+    else
+      echo "Push failed after retries."
+      exit 1
+    fi
   else
     echo "No new notes, nothing to push."
   fi

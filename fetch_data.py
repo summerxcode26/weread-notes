@@ -275,21 +275,14 @@ def compact_note(n: dict, cat: str, themes: list) -> dict:
     return c
 
 
-def fetch_shelf_reviews():
-    """Fetch star ratings from shelf."""
+def build_reviews(compact_notes: list) -> list:
+    """Book reviews (书评) with a star rating, pulled from the notes already
+    fetched via /review/list/mine — /shelf/sync's finishedStar/star fields
+    are unpopulated for this account, so that endpoint can't be used."""
     reviews = []
-    try:
-        res = api_call({"api_name": "/shelf/sync", "synckey": 0, "teenmode": 0})
-        for book in res.get("books", []):
-            b = book.get("book", {})
-            bid = b.get("bookId", "")
-            title = b.get("title", "")
-            author = b.get("author", "")
-            rating = book.get("finishedStar", 0) or book.get("star", 0)
-            if rating and title:
-                reviews.append({"bk": title, "au": author, "st": rating, "dt": ""})
-    except Exception as e:
-        print(f"  [warn] shelf: {e}")
+    for n in compact_notes:
+        if n.get("br") and n.get("st"):
+            reviews.append({"bk": n["bk"], "au": n["au"], "st": n["st"], "th": n.get("th", ""), "dt": n["dt"]})
     return reviews
 
 
@@ -399,8 +392,8 @@ def run(progress_callback=None):
         cat, themes = classify_note(n)
         compact_notes.append(compact_note(n, cat, themes))
 
-    log("Fetching shelf reviews...")
-    reviews = fetch_shelf_reviews()
+    log("Building book reviews...")
+    reviews = build_reviews(compact_notes)
 
     log("Generating data.js...")
     count = generate_data_js(compact_notes, books, reviews)
