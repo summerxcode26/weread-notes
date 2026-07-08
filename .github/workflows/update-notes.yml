@@ -23,7 +23,16 @@ jobs:
       - name: Fetch latest notes
         env:
           WEREAD_API_KEY: ${{ secrets.WEREAD_API_KEY }}
-        run: python3 fetch_data.py
+        run: |
+          # Runner-side network hiccups happen occasionally (see the 2026-07-07
+          # run, which failed with "Network is unreachable"); retry a few times
+          # with backoff before giving up, so one flaky run doesn't skip a day.
+          for i in 1 2 3; do
+            if python3 fetch_data.py; then exit 0; fi
+            echo "fetch_data.py failed (attempt $i), retrying in 30s..."
+            sleep 30
+          done
+          exit 1
 
       - name: Commit and push if changed
         run: |
