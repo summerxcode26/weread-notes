@@ -3,8 +3,10 @@ name: Update WeRead Notes
 on:
   schedule:
     # 17 min past the hour, not on the hour — GitHub's scheduler is most
-    # congested (and most likely to drop runs) right at :00.
-    - cron: '17 0 * * *'  # ~00:17 UTC = ~08:17 Beijing time
+    # congested (and most likely to drop runs) right at :00. Scheduled 2h
+    # earlier than the actual target time to absorb GitHub's typical 2-5h
+    # scheduling delay for low-activity repos, so it still lands by morning.
+    - cron: '17 22 * * *'  # ~22:17 UTC = ~06:17 Beijing time (target: 08:17)
   workflow_dispatch: {}
 
 permissions:
